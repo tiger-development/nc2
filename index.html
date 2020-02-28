@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<!-- This is the main HTML file for the explorer -->
+<!-- ------------------------------------------>
+<html>
+
+<head>
+    <meta charset="utf-8">
+
+    <!-- Link to style sheets -->
+
+</head>
+
+<body>
+    <div>Steem Keychain Login</div>
+    <div>--------------------</div>
+    <br>
+    <div id="status"><br></div>
+    <br>
+    <select id="usernameSelect">
+        <option>@miniature-tiger</option>
+        <option>@tiger-zaps</option>
+    </select>
+    <!--
+    <input type="text" id="usernameField" placeholder="...Steem username...">
+    -->
+
+    <div>
+        <button type="button" id="login">Login with Keychain</button>
+    </div>
+    <div>
+        <button type="button" id="logout">Logout</button>
+    </div>
+
+    <br><br>
+
+
+    <div>
+        Transaction Missions:
+    </div>
+    <br>
+
+
+    <!--
+    Planets to run:
+    <select id="missionPlanet">
+        <option>all</option>
+    </select>
+    !-->
+
+
+    <div>
+        Approximate coordinates of ExplorerII mission: <br>
+        x: <input type="number" id="xCoordinate" value="306"> y: <input type="number" id="yCoordinate" value="-532">
+    </div>
+    <br>
+
+    <div>
+        Explorer search range: <br>
+        range: <input type="number" id="explorerRange" value="24">
+    </div>
+    <br>
+
+    <div>
+        Maximum transactions: <input type="number" id="numberOfTransactions" value="1"> <br>
+    </div>
+    <div>
+        Mission:
+        <select id="loginMissionSelect">
+          <option>send explorerII</option>
+            <option>send explorers</option>
+            <option>upgrade buildings</option>
+            <option>build ships</option>
+            <option>sell ships</option>
+            <option>check</option>
+        </select>
+    </div>
+    <button id="runLoginMission">Run Mission</button><br><br>
+
+
+    <div>
+        Information searches:
+    </div>
+    <br>
+    <select id="infoMissionSelect">
+        <option>explorerII scoping</option>
+        <option>market</option>
+        <option>define strategy</option>
+        <option>send explorers</option>
+
+        <option>ships</option>
+        <option>buildings</option>
+        <option>snipes</option>
+        <option>targets</option>
+
+    </select>
+
+    <button id="runInfoMission">Run Mission</button><br><br>
+
+    <!-- A div used as a placeholder to which the dynamically generated board is added -->
+    <div id="output">
+    </div>
+
+    <!-- The javascript files -->
+    <script src='userData.js'></script>
+    <script src='ncapi.js'></script>
+    <script src='keychain.js'></script>
+    <script src='main.js'></script>
+
+</body>
