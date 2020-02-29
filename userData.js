@@ -110,7 +110,7 @@ async function createUserData(user) {
     console.dir(dataPlanets)
     for (const planet of dataPlanets.planets) {
 
-        if (i<=10) {
+        if (i<=1) {
             let galaxyData = await getGalaxy(planet.posx, planet.posy, 48, 48);
             //console.dir(galaxyData)
             let planetCoords = [planet.posx, planet.posy]

@@ -1,22 +1,254 @@
-let keychainFunctioning = false;
+// TO DO
 
+// Add separate tab
+// Get list of user planets
+// Start with 10 planets
+// Add coloured button grid - exploration - build - ships (buttons should be drop downs effectively)
+
+keychainFunctioning = false
 
 // On page load
 window.addEventListener('load', async (event) => {
-    // Temp
-    console.log(window.steem_keychain)
 
-    // Get status output
-    const status = document.getElementById('status');
+    // ----------------------------------
+    // GET PAGE ELEMENTS ON LOADING
+    // ----------------------------------
 
-    // Get the username input field
+    // Get header links and section divs
+    const sitePages = document.getElementById('links');
+    const centralLogo = document.getElementById('centralLogo');
+    const reportLink = document.getElementById('reportLink');
+    const reportDiv = document.getElementById('report');
+    const missionsLink = document.getElementById('missionsLink');
+    const missionsDiv = document.getElementById('missions');
+    const planetsLink = document.getElementById('planetsLink');
+    const planetsDiv = document.getElementById('planets');
+    const loginLink = document.getElementById('loginLink');
+    const loginDiv = document.getElementById('login');
+    const loginHeaderStatus = document.getElementById('loginHeaderStatus');
+
+    // Create object to facilitate switching between sections
+    const sections = [
+            {sectionName: "report", sectionTitle: "Strategy Report", sectionLink: reportLink, sectionDiv: reportDiv},
+            {sectionName: "missions", sectionTitle: "Mission Control", sectionLink: missionsLink, sectionDiv: missionsDiv},
+            {sectionName: "planets", sectionTitle: "Planet Classification", sectionLink: planetsLink, sectionDiv: planetsDiv},
+            {sectionName: "login", sectionTitle: "Login", sectionLink: loginLink, sectionDiv: loginDiv},
+    ]
+    const sectionLinks = sections.map(section => section.sectionLink)
+
+    // Get login elements
     const usernameSelect = document.getElementById('usernameSelect');
+    const loginButton = document.getElementById('loginButton');
+    const logoutButton = document.getElementById('logoutButton');
+    const loginStatusDisplay = document.getElementById('loginStatus');
 
-    // Get login button
-    const loginButton = document.getElementById('login');
 
-    // Get logout button
-    const logoutButton = document.getElementById('logout');
+    // ----------------------------------
+    // HEADER LINKS AND SECTION SWICTHING
+    // ----------------------------------
+
+    var currentPage = getCurrentPage()
+    console.log(currentPage)
+
+    // Event listener for click on header - switches between sections
+    sitePages.addEventListener("click", function(e) {
+        // e.target will be the item that was clicked on
+        if (sectionLinks.includes(e.target)) {
+            switchSection(e.target)
+        }
+    })
+
+    // Switches between different "pages" (sections) using link
+    function switchSection(sectionLink) {
+        const index = sectionLinks.findIndex(link => link === sectionLink)
+
+        for (let i = 0; i < sections.length; i+=1) {
+            if (i === index) {
+                sections[i].sectionDiv.style.display = "block";
+                centralLogo.innerText = sections[i].sectionTitle
+                setCurrentPage(sections[i].sectionName)
+            } else {
+                sections[i].sectionDiv.style.display = "none";
+            }
+        }
+    }
+
+    // Switches between different "pages" (sections) using link
+    function switchSectionWithSectionName(sectionName) {
+        const index = sections.findIndex(section => section.sectionName === sectionName)
+        console.log(index)
+        switchSection(sections[index].sectionLink)
+    }
+
+    // Store current page in local storage
+    function setCurrentPage(sectionName) {
+        //const index = sections.findIndex(name => sections.sectionName === sectionName)
+        localStorage.setItem('currentPage', sectionName);
+    }
+
+    // Store current page in local storage
+    function getCurrentPage() {
+        const value = localStorage.getItem('currentPage');
+        return (value !== null) ? value : false;
+    }
+
+    // ----------------------------------
+    // KEYCHAIN
+    // ----------------------------------
+
+    // Check Steem Keychain extension installed and functioning
+    if(window.steem_keychain) {
+        let keychain = window.steem_keychain;
+        console.log('Keychain installed');
+
+        // Request handshake
+        steem_keychain.requestHandshake(function() {
+            console.log('Handshake received!');
+            keychainFunctioning = true
+        });
+    // Steem Keychain extension not installed...
+    } else {
+        console.log('Keychain not installed');
+    }
+
+
+    // ----------------------------------
+    // LOGIN
+    // ----------------------------------
+
+    // Check if anyone is already logged in or set for info
+    let user = getUser();
+    let logInStatus = getLogInStatus();
+
+    let userData = [];
+    if (user) {
+        if (logInStatus == "keychain") {
+            loginDisplay(user, "Keychain connected. <br> Logged in as @" + user)
+        } else if (logInStatus == "setForInfo") {
+            loginDisplay(user, "No keychain connection. <br> Logged in for info as @" + user)
+        }
+        userData = loginUserData(user);
+        if (currentPage) {
+            switchSectionWithSectionName(currentPage)
+        } else {
+            switchSectionWithSectionName("report")
+        }
+        
+    } else {
+        logoutDisplay();
+        switchSectionWithSectionName("login")
+    }
+
+
+    // Store username in local storage
+    function setLogInStatus(loginStatus) {
+        localStorage.setItem('loginStatus', loginStatus);
+        return loginStatus
+    }
+
+    // Check if user logged in
+    function getLogInStatus() {
+        const value = localStorage.getItem('loginStatus');
+        return (value !== null) ? value : false;
+    }
+
+    // Store username in local storage
+    function setUser(user) {
+        localStorage.setItem('user', user);
+        return user
+    }
+
+    function getUser() {
+        const value = localStorage.getItem('user');
+        return (value !== null) ? value : false;
+    }
+
+    // Remove username from local storage
+    function logoutUser() {
+        localStorage.setItem('loginStatus', false);
+        localStorage.removeItem('user');
+    }
+
+    function loginDisplay(user, message) {
+        console.log("loginDisplay")
+        loginButton.style.display = 'none';
+        usernameSelect.style.display = 'none';
+        logoutButton.style.display = 'initial';
+        loginStatusDisplay.innerHTML = message
+        loginHeaderStatus.innerHTML = '@' + user
+    }
+
+    function logoutDisplay() {
+        console.log("logoutDisplay")
+        logoutButton.style.display = 'none';
+        loginButton.style.display = 'initial';
+        usernameSelect.style.display = 'initial';
+        loginStatusDisplay.innerHTML = 'Log in with Steem keychain.';
+        loginHeaderStatus.innerHTML = '@...'
+    }
+
+    // Temp
+    //console.log(window.steem_keychain)
+
+
+
+
+
+
+
+
+    // When login button is clicked
+    loginButton.addEventListener('click', (e) => {
+            // Stop the default action from doing anything
+            e.preventDefault();
+
+            // Get the value from the username field
+            userValue = usernameSelect.value.slice(1, usernameSelect.value.length);
+
+            // Check window.steem_keychain exists
+            if (keychainFunctioning == true) {
+
+                steem_keychain.requestSignBuffer(userValue, 'login', 'Posting', response => {
+                    if (user && logInStatus == "keychain") {
+                        // do nothing
+                    } else {
+                        user = setUser(userValue);
+                        logInStatus = setLogInStatus("keychain")
+                        loginDisplay(userValue, "Keychain connected. <br> Logged in as @" + user)
+                        userData =loginUserData(user);
+                    }
+                });
+            } else {
+                console.log('Keychain not installed');
+                user = setUser(userValue);
+                logInStatus = setLogInStatus("setForInfo")
+                loginDisplay(userValue, "No keychain connection. <br> Logged in for info as @" + user)
+                userData = loginUserData(user);
+            }
+    });
+
+    // When the logout button is clicked
+    logoutButton.addEventListener('click', (e) => {
+        // Stop the default action from doing anything
+        e.preventDefault();
+        user = false
+        logInStatus = false
+        logoutUser();
+        logoutDisplay();
+        userData = [];
+    });
+
+
+
+
+
+    function loginUserData(user) {
+        //return fetchUserData(user);
+    }
+
+
+
+
 
     // Get mission buttons
     const runLoginMissionButton = document.getElementById('runLoginMission');
@@ -39,81 +271,12 @@ window.addEventListener('load', async (event) => {
     //let user = inputs.elements[0].value
     //let mission = inputs.elements[0].value
 
-    // Check Steem Keychain extension installed and functioning
-    if(window.steem_keychain) {
-        let keychain = window.steem_keychain;
-        console.log('Keychain installed');
-        // Request handshake
-        steem_keychain.requestHandshake(function() {
-            console.log('Handshake received!');
-            keychainFunctioning = true
-        });
 
-    // Steem Keychain extension not installed...
-    } else {
-        console.log('Keychain not installed');
-    }
 
-    for (const [index, userName] of userList.entries()) {
-        await createUserData(userName.user);
-        console.dir(userDataStore[index])
-    }
-
-    // Check if anyone is already logged in or set for info
-    let user = getUser();
-    let logInStatus = getLogInStatus();
-
-    let userData = [];
-    if (user && logInStatus == "keychain") {
-        loginDisplay(user)
-        userData = loginUserData(user);
-    } else if (user && logInStatus == "setForInfo") {
-        loginDisplay(user)
-        userData =loginUserData(user);
-    } else {
-        logoutDisplay();
-    }
-
-    // When login button is clicked
-    loginButton.addEventListener('click', (e) => {
-            // Stop the default action from doing anything
-            e.preventDefault();
-
-            // Get the value from the username field
-            userValue = usernameSelect.value.slice(1, usernameSelect.value.length);
-
-            // Check window.steem_keychain exists
-            if (keychainFunctioning == true) {
-
-                steem_keychain.requestSignBuffer(userValue, 'login', 'Posting', response => {
-                    if (user && logInStatus == "keychain") {
-                        // do nothing
-                    } else {
-                        user = setUser(userValue);
-                        logInStatus = setLogInStatus("keychain")
-                        loginDisplay(userValue)
-                        userData =loginUserData(user);
-                    }
-                });
-            } else {
-                console.log('Keychain not installed');
-                user = setUser(userValue);
-                logInStatus = setLogInStatus("setForInfo")
-                loginDisplay(userValue)
-                userData = loginUserData(user);
-            }
-    });
-
-    // When the logout button is clicked
-    logoutButton.addEventListener('click', (e) => {
-        // Stop the default action from doing anything
-        e.preventDefault();
-        user = false
-        logInStatus = false
-        logoutUser();
-        logoutDisplay();
-        userData = [];
-    });
+    //for (const [index, userName] of userList.entries()) {
+    //    await createUserData(userName.user);
+    //    console.dir(userDataStore[index])
+    //}
 
     runLoginMissionButton.addEventListener('click', (e) => {
         // Stop the default action from doing anything
@@ -150,25 +313,7 @@ window.addEventListener('load', async (event) => {
     });
 
 
-    function loginDisplay(user) {
-        console.log("loginDisplay")
-        loginButton.style.display = 'none';
-        usernameSelect.style.display = 'none';
-        logoutButton.style.display = 'initial';
-        status.innerHTML = 'Logged in as ' + user;
-    }
 
-    function loginUserData(user) {
-        return fetchUserData(user);
-    }
-
-    function logoutDisplay() {
-        console.log("logoutDisplay")
-        logoutButton.style.display = 'none';
-        loginButton.style.display = 'initial';
-        usernameSelect.style.display = 'initial';
-        status.innerHTML = 'You are not logged in.';
-    }
 
 
 });
@@ -176,37 +321,7 @@ window.addEventListener('load', async (event) => {
 
 
 
-// Login / logout functions
-// ------------------------
 
-// Store username in local storage
-function setLogInStatus(loginStatus) {
-    localStorage.setItem('loginStatus', loginStatus);
-    return loginStatus
-}
-
-// Check if user logged in
-function getLogInStatus() {
-    const value = localStorage.getItem('loginStatus');
-    return (value !== null) ? value : false;
-}
-
-// Store username in local storage
-function setUser(user) {
-    localStorage.setItem('user', user);
-    return user
-}
-
-function getUser() {
-    const value = localStorage.getItem('user');
-    return (value !== null) ? value : false;
-}
-
-// Remove username from local storage
-function logoutUser() {
-    localStorage.setItem('loginStatus', false);
-    localStorage.removeItem('user');
-}
 
 
 
@@ -217,6 +332,7 @@ let missionLaunchTime = Date.now();
 let workFlowMonitor = true
 
 
+// --------------------------
 
 async function runLoginMission(user, userData, mission, maxProcess, explorerRange, xCoordinate, yCoordinate, outputNode) {
     outputNode.innerHTML = "";

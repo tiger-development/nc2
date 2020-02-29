@@ -1,0 +1,58 @@
+/* Stylesheet for candle charts */
+/* ---------------------------- */
+
+html {
+    background-color: rgb(2, 21, 46);
+    font-family: 'Futura';
+    font-size: 16px;
+    color: rgb(252, 252, 252);
+    margin: 0;
+}
+
+body {
+    margin: 0;
+}
+
+.header {
+    position: relative;
+    vertical-align: top;
+    width: 100%;
+    height: 100px;
+
+    background-color: rgb(2, 21, 46);
+    color: rgb(252, 252, 252);
+    z-index: 10;
+}
+
+.centralLogo {
+    padding: 0% 0% 1% 0%;
+    width: 100%;
+    height: 48px;
+    font-size: 32px;
+    text-align: center;
+}
+
+.sitePages {
+    width: 100%;
+    height: 50px;
+    font-size: 24px;
+    text-align: center;
+
+}
+
+.sitePageBox {
+    display: inline-block;
+    padding: 1% 0% 1% 0%;
+    width: 16%;
+    height: 24px;
+    font-size: 16px;
+    color: rgb(252, 252, 252);
+    text-decoration: none;
+}
+
+.section {
+    padding: 1% 1% 1% 1%;
+    margin: 1% 1% 1% 1%;
+    background-color: rgb(2, 21, 46);
+    background-color: rgb(6, 38, 82);
+}
