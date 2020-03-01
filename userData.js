@@ -116,9 +116,21 @@ async function updateAndStoreUserData(user, updateType) {
         }
     }
 
-    // Loop through planets from API and add any new planets to userDataEntry
-
+    // Loop through planets from API and add any new planets to userDataEntry / update old planets
     for (const [i, planet] of dataPlanets.planets.entries()) {
+
+        let planetFleetInfo = await getPlanetFleet(user, planet.id);
+        let explorerOneFleetIndex = planetFleetInfo.findIndex(fleet => fleet.type == "explorership");
+        let explorerOneAvailable = 0;
+        if (explorerOneFleetIndex != -1) {
+            explorerOneAvailable = planetFleetInfo[explorerOneFleetIndex].quantity;
+        }
+        let explorerTwoFleetIndex = planetFleetInfo.findIndex(fleet => fleet.type == "explorership1");
+        let explorerTwoAvailable = 0;
+        if (explorerTwoFleetIndex != -1) {
+            explorerTwoAvailable = planetFleetInfo[explorerTwoFleetIndex].quantity;
+        }
+
         let userDataPlanetsIndex = userDataEntry.planets.findIndex(entry => entry.id === planet.id);
         // Planet not previously existing - add to userDataEntry with details
         if (userDataPlanetsIndex === -1) {
@@ -128,20 +140,28 @@ async function updateAndStoreUserData(user, updateType) {
             planetData["name"] = planet.name; // update below
             planetData["date"] = planet.date; // updating - never
             planetData["planetCoords"] = [planet.posx, planet.posy]; // updating - never
+            planetData["planetMissionInfo"] = await getPlanetMissionInfo(user, planet.id);
+            planetData["planetFleetInfo"] = planetFleetInfo;
+            planetData["explorerOneAvailable"] = explorerOneAvailable;
+            planetData["explorerTwoAvailable"] = explorerTwoAvailable;
             planetData["status"] = 'new';
             planetData["exploreDerived"] = true;
             planetData["shortestDistance"] = 0;
             planetData["exploreOverride"] = false;
             planetData["focusOverride"] = false;
             planetData["buildOverride"] = false;
+
             console.log(planetData)
             userDataEntry.planets.push(planetData)
         } else {
             userDataEntry.planets[userDataPlanetsIndex].name = planet.name; // update in case of name change
+            userDataEntry.planets[userDataPlanetsIndex]["planetMissionInfo"] = await getPlanetMissionInfo(user, planet.id);
+            userDataEntry.planets[userDataPlanetsIndex]["planetFleetInfo"] = planetFleetInfo;
+            userDataEntry.planets[userDataPlanetsIndex]["explorerOneAvailable"] = explorerOneAvailable;
+            userDataEntry.planets[userDataPlanetsIndex]["explorerTwoAvailable"] = explorerTwoAvailable;
             if (userDataEntry.planets[userDataPlanetsIndex].status == 'new') {
                 userDataEntry.planets[userDataPlanetsIndex].status = 'normal';
             }
-
         }
 
     }
@@ -159,15 +179,10 @@ async function updateAndStoreUserData(user, updateType) {
     let userMissions = await getLimitedUserMissions(user, 800)
 
 
-    //let userPlanetPriorityData = fetchUserPlanetPriorityData(user);
-    //let doNotBuildData = fetchDoNotBuildData(user);
     //let minimumShipPriorityData = fetchMinimumShipPriorityData(user);
 
 
 
-    // Sort planets by most recent discovery
-    //dataPlanets.planets.sort((a, b) => b.date - a.date);
-    //dataPlanets.planets.sort((a, b) => a.date - b.date);
 
 
 
@@ -222,8 +237,6 @@ async function updateAndStoreUserData(user, updateType) {
             }
 
 
-            //let exploreFromThisPlanet = userPlanetPriorityData.planets.includes(planet.id);
-            //let buildOnThisPlanet = !doNotBuildData.planets.includes(planet.id);
 
             /*
 
