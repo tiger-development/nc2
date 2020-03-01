@@ -4,13 +4,21 @@
 html {
     background-color: rgb(2, 21, 46);
     font-family: 'Futura';
+    font-family: "Courier New", Courier, monospace;
     font-size: 16px;
     color: rgb(252, 252, 252);
     margin: 0;
 }
 
 body {
+    user-select: none;
     margin: 0;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .header {
@@ -55,4 +63,25 @@ body {
     margin: 1% 1% 1% 1%;
     background-color: rgb(2, 21, 46);
     background-color: rgb(6, 38, 82);
+    display: none
+}
+
+.tableBoxDerived {
+    text-align: center;
+    padding: 2px 2px 2px 2px;
+    margin: 0.1% 0.1% 0.1% 0.1%;
+    background-color: rgb(2, 21, 46);
+    color: rgb(252, 252, 252);
+}
+
+.tableBoxUser {
+    text-align: center;
+    padding: 2px 2px 2px 2px;
+    margin: 0.1% 0.1% 0.1% 0.1%;
+    background-color: rgb(30, 89, 166);
+    color: rgb(254, 254, 254);
+}
+
+.planetsTable {
+
 }

@@ -1,14 +1,29 @@
 // TO DO
 
-// Add separate tab
+// ----- USER DATA ----
+// Check when user data last obtained (store this)
+// If never then full user data
+
+// If not then
+// - Either pick up stored user data and partial update user data
+// - Or pick up stored user data and full recalc
+
+// Store key user data info
+
 // Get list of user planets
 // Start with 10 planets
 // Add coloured button grid - exploration - build - ships (buttons should be drop downs effectively)
 
-keychainFunctioning = false
+//setItemInLocalStorage('userData', "")
+var keychainFunctioning = false
+
 
 // On page load
 window.addEventListener('load', async (event) => {
+
+
+    // Temp
+    //console.log(window.steem_keychain)
 
     // ----------------------------------
     // GET PAGE ELEMENTS ON LOADING
@@ -36,11 +51,15 @@ window.addEventListener('load', async (event) => {
     ]
     const sectionLinks = sections.map(section => section.sectionLink)
 
+    // Get planets elements
+    const planetsTable = document.getElementById('planetsTable');
+
     // Get login elements
     const usernameSelect = document.getElementById('usernameSelect');
     const loginButton = document.getElementById('loginButton');
     const logoutButton = document.getElementById('logoutButton');
     const loginStatusDisplay = document.getElementById('loginStatus');
+
 
 
     // ----------------------------------
@@ -127,13 +146,17 @@ window.addEventListener('load', async (event) => {
         } else if (logInStatus == "setForInfo") {
             loginDisplay(user, "No keychain connection. <br> Logged in for info as @" + user)
         }
-        userData = loginUserData(user);
+
+        // Set up / fetch user data
+        setLoginUserData(user);
+
+        // Switch to current page
         if (currentPage) {
             switchSectionWithSectionName(currentPage)
         } else {
             switchSectionWithSectionName("report")
         }
-        
+
     } else {
         logoutDisplay();
         switchSectionWithSectionName("login")
@@ -187,15 +210,6 @@ window.addEventListener('load', async (event) => {
         loginHeaderStatus.innerHTML = '@...'
     }
 
-    // Temp
-    //console.log(window.steem_keychain)
-
-
-
-
-
-
-
 
     // When login button is clicked
     loginButton.addEventListener('click', (e) => {
@@ -215,7 +229,7 @@ window.addEventListener('load', async (event) => {
                         user = setUser(userValue);
                         logInStatus = setLogInStatus("keychain")
                         loginDisplay(userValue, "Keychain connected. <br> Logged in as @" + user)
-                        userData =loginUserData(user);
+                        setLoginUserData(user);
                     }
                 });
             } else {
@@ -223,7 +237,7 @@ window.addEventListener('load', async (event) => {
                 user = setUser(userValue);
                 logInStatus = setLogInStatus("setForInfo")
                 loginDisplay(userValue, "No keychain connection. <br> Logged in for info as @" + user)
-                userData = loginUserData(user);
+                setLoginUserData(user);
             }
     });
 
@@ -238,13 +252,197 @@ window.addEventListener('load', async (event) => {
         userData = [];
     });
 
+    async function setLoginUserData(user) {
+        let updateType = "full"
 
+        const previousUserDataTime = getItemFromLocalStorage('userDataTime')
+        const userDataTime = Date.now();
+        setItemInLocalStorage('userDataTime', userDataTime)
 
+        if ((userDataTime - previousUserDataTime) < (1000 * 60 * 60)) {
+            updateType = "minor"
+        }
 
+        userData = await updateAndStoreUserData(user, updateType);
 
-    function loginUserData(user) {
-        //return fetchUserData(user);
+        // Currently put here as it needs to wait for user data
+        fillPlanetsTable()
     }
+
+
+
+    // Store username in local storage
+    function setUserDataTime(time) {
+        localStorage.setItem('userDataTime', userDataTime);
+    }
+
+    // Store username in local storage
+    function getUserDataTime() {
+        const value = localStorage.getItem('userDataTime');
+        return (value !== null) ? value : false;
+    }
+
+
+    // ----------------------------------
+    // PLANETS
+    // ----------------------------------
+
+    function fillPlanetsTable() {
+        console.dir(userData)
+        planetsTable.innerHTML = "";
+
+        const columnHeaders = ["Name", "ID", "Coords", "Focus", "Build", "Explore", "Distance"]
+        const columnWidths = ["12%", "12%", "8%", "8%", "8%", "8%", "8%"]
+
+        // Create row for table and label it with planet id
+        let headerRow = document.createElement("div")
+        headerRow.setAttribute('id', "headerRow");
+        headerRow.setAttribute('class', "planetsTable");
+        planetsTable.appendChild(headerRow);
+
+        for (let i = 0; i < columnHeaders.length; i+=1) {
+            headerRow.appendChild(createPlanetDiv(columnHeaders[i], columnHeaders[i], columnWidths[i], false));
+        }
+
+        function createPlanetDiv(divId, text, width, derived) {
+            let div = document.createElement("div");
+            div.setAttribute('id', divId);
+            if (derived === true) {
+                div.setAttribute('class', 'tableBoxDerived');
+            } else {
+                div.setAttribute('class', 'tableBoxUser');
+            }
+            div.style.width = width;
+            div.style.display = 'inline-block';
+
+            let divText = document.createTextNode(text);
+            div.appendChild(divText);
+            return div
+        }
+
+
+
+
+        for (const planet of userData.planets) {
+
+
+            // Create row for table and label it with planet id
+            let newRow = document.createElement("div")
+            newRow.setAttribute('id', planet.id);
+            newRow.setAttribute('class', "planetsTable");
+            planetsTable.appendChild(newRow);
+
+
+
+            newRow.appendChild(createPlanetDiv("name", planet.name, columnWidths[0], true))
+            newRow.appendChild(createPlanetDiv("id", planet.id, columnWidths[1], true))
+            newRow.appendChild(createPlanetDiv("coords", "[" + planet.planetCoords + "]", columnWidths[2], true))
+
+            if (planet.focus === planet.focusDerived) {
+                newRow.appendChild(createPlanetDiv("focus", planet.focus, columnWidths[3], true))
+            } else {
+                newRow.appendChild(createPlanetDiv("focus", planet.focus, columnWidths[3], false))
+            }
+
+            if (planet.build === planet.buildDerived) {
+                newRow.appendChild(createPlanetDiv("build", planet.build, columnWidths[4], true))
+            } else {
+                newRow.appendChild(createPlanetDiv("build", planet.build, columnWidths[4], false))
+            }
+
+            if (planet.explore === planet.exploreDerived) {
+                newRow.appendChild(createPlanetDiv("explore", planet.explore, columnWidths[5], true))
+            } else {
+                newRow.appendChild(createPlanetDiv("explore", planet.explore, columnWidths[5], false))
+            }
+
+            newRow.appendChild(createPlanetDiv("distance", planet.shortestDistance, columnWidths[6], true))
+
+            /*
+            // Add div for planet name
+            let planetName = document.createElement("div")
+            let planetNameText = document.createTextNode(planet.name);
+            planetName.appendChild(planetNameText);
+            newRow.appendChild(planetName)
+
+            // Add div for planet id
+            let planetId = document.createElement("div")
+            let planetIdText = document.createTextNode(planet.id);
+            planetId.appendChild(planetIdText);
+            newRow.appendChild(planetId)
+            */
+
+            // Add div for planet coordinates
+            // Add div? dropdown? for build type classification
+            // Add id for build type classification
+
+
+
+        }
+
+    }
+
+    // Event listener for click on planetsTable
+    planetsTable.addEventListener("click", function(e) {
+
+        // "Enum" of values for Focus
+        planetStates = Object.freeze({
+            focus: {values: ["explore", "develop", "resource"], override: "focusOverride", derived: "focusDerived"} ,
+            build: {values: ["new", "develop", "none"], override: "buildOverride", derived: "buildDerived"},
+            explore: {values: ["true", "false"], override: "exploreOverride", derived: "exploreDerived"}
+        });
+
+        let userDataEntry = fetchUserDataFromStorage(user)
+
+        // Identify cell clicked on (ignore header for the moment)
+        const item = e.target.id
+        const parentDivID = e.target.parentNode.id;
+        let divValue = e.target.innerText
+        console.log(item, parentDivID, divValue)
+
+        // Rotate through possible values and update table and userData
+        if (planetStates[item] !== undefined) {
+            const columnValues = planetStates[item].values
+            console.log(columnValues)
+            const currentIndex = columnValues.findIndex(value => value == divValue);
+            const newIndex = (currentIndex + 1) % columnValues.length
+            const newValue = columnValues[newIndex]
+            console.log(currentIndex, newIndex, newValue)
+
+
+            let userDataPlanetsIndex = userDataEntry.planets.findIndex(entry => entry.id === parentDivID);
+            console.log(userDataPlanetsIndex)
+            if (userDataPlanetsIndex !== -1) {
+                let override = planetStates[item].override
+                let derived = planetStates[item].derived
+
+                if (userDataEntry.planets[userDataPlanetsIndex][derived] === newValue) {
+                    e.target.setAttribute('class', 'tableBoxDerived');
+                    userDataEntry.planets[userDataPlanetsIndex][override] = false
+                } else {
+                    e.target.setAttribute('class', 'tableBoxUser');
+                    userDataEntry.planets[userDataPlanetsIndex][override] = newValue
+                }
+                userDataEntry.planets[userDataPlanetsIndex][item] = newValue
+                e.target.innerText = newValue
+
+                setUserDataInStorage(user, userDataEntry)
+            }
+
+
+        }
+
+
+
+
+
+
+
+
+    });
+
+
+
 
 
 
@@ -353,6 +551,12 @@ async function runLoginMission(user, userData, mission, maxProcess, explorerRang
         processKeychainTransactions(user, buildingsTransactions, maxProcess, 500);
         // buildShip(user, "P-ZCBO9MBOJ2O", "corvette")
         //upgradeBuilding(user, planetId, buildingName)
+    } else if (mission == "build - new") {
+        console.log("runLoginMission - build - new")
+        let transactions = await findNewBuildTransactions(user, outputNode)
+        //upgradeBuilding(user, "P-Z142YAEQFO0", "shieldgenerator")
+        processKeychainTransactions(user, buildingsTransactions, maxProcess, 500);
+
     } else if (mission == "send explorers") {
         console.log("runLoginMission - send explorers")
         let explorationTransactions = await findExplorationTransactions(user, userData, explorerRange, outputNode)
@@ -378,6 +582,8 @@ async function runInfoMission(user, userData, mission, explorerRange, xCoordinat
         snipes(user,outputNode)
     } else if (mission == "buildings") {
         let buildingsTransactions = await findBuildingsToUpgrade(user, userData, outputNode)
+    } else if (mission == "build - new") {
+        let transactions = await findNewBuildTransactions(user, outputNode)
     } else if (mission == "ships") {
         let buildShipTransactions = await findShipsToBuild(user, userData, outputNode)
     } else if (mission == "market") {
@@ -619,6 +825,8 @@ async function shipsToUpgradeForPlanet(planetId, resources, shipyard, shipPriori
 
 async function buildingsToUpgradeForPlanet(planetId, resources, buildings, minimumRequiredSkillLevel) {
 
+
+
     let scarceResource = findScarceResource(JSON.parse(JSON.stringify(resources)));
     let remainingResources = JSON.parse(JSON.stringify(resources));
 
@@ -675,6 +883,102 @@ async function buildingsToUpgradeForPlanet(planetId, resources, buildings, minim
 
     return buildingsToUpgrade;
 }
+
+async function newBuildTransactionsForPlanet(planetId, resources, buildings) {
+    console.log(planetId)
+    console.dir(resources)
+    console.dir(buildings)
+
+    let maximumLevel = 14;
+
+    let buildingsPriority = [
+        {name: "base", priority: 1},
+        {name: "coalmine", priority: 1},
+        {name: "oremine", priority: 1},
+        {name: "coppermine", priority: 1},
+        {name: "uraniummine", priority: 1},
+        {name: "shipyard", priority: 4},
+        {name: "coaldepot", priority: 4},
+        {name: "oredepot", priority: 4},
+        {name: "copperdepot", priority: 4},
+        {name: "uraniumdepot", priority: 4},
+        {name: "researchcenter", priority: 6},
+        {name: "bunker", priority: 7},
+        {name: "shieldgenerator", priority: 7},
+    ]
+
+    let buildingsToUpgrade = [];
+
+    let remainingResources = JSON.parse(JSON.stringify(resources));
+    let minimumPriorityCalc = 10000;
+
+    for (const [i, buildPriority] of buildingsPriority.entries()) {
+        let buildingsIndex = buildings.findIndex(building => building.name == buildPriority.name);
+        let priorityCalc = buildPriority.priority + buildings[buildingsIndex].current;
+        buildingsPriority[i]["priorityCalc"] = priorityCalc;
+
+        buildingsPriority[i]["busy"] = buildings[buildingsIndex].busy;
+        buildingsPriority[i]["current"] = buildings[buildingsIndex].current;
+        buildingsPriority[i]["skill"] = buildings[buildingsIndex].skill;
+        buildingsPriority[i]["coal"] = buildings[buildingsIndex].coal;
+        buildingsPriority[i]["ore"] = buildings[buildingsIndex].ore;
+        buildingsPriority[i]["copper"] = buildings[buildingsIndex].copper;
+        buildingsPriority[i]["uranium"] = buildings[buildingsIndex].uranium;
+
+        if (priorityCalc < minimumPriorityCalc) {
+            minimumPriorityCalc = priorityCalc;
+        }
+    }
+
+    console.log(minimumPriorityCalc, maximumLevel+1)
+    if (minimumPriorityCalc < (maximumLevel+1)) {
+        let sufficient = true;
+
+        for (const buildPriority of buildingsPriority) {
+            if (sufficient == true) {
+                // Check if building already being updated
+                let busy = checkIfBuildingBusy(missionLaunchTime, buildPriority.busy)
+
+                // Check if skill level greater than current level
+                let nextSkill = checkIfNextSkillCompleted(buildPriority.current, buildPriority.skill)
+
+                // Check if current skill below minimum required
+                let upgradeRequired = false
+                if (buildPriority.priorityCalc == minimumPriorityCalc) {
+                    upgradeRequired = true
+                }
+
+                if (busy == false && nextSkill == true && upgradeRequired == true) {
+                    let newRemainingResources = remainingResources;
+
+                    // Check if sufficient resources for upgrade
+                    sufficient = checkIfSufficientResources(buildPriority, remainingResources)
+
+                    if (sufficient == true) {
+                        remainingResources = deductCosts(buildPriority, remainingResources)
+
+                        let buildingInfo = {}
+
+                        // Include name and current skill level
+                        buildingInfo.type = "upgradeBuilding"
+                        buildingInfo.planetId = planetId
+                        buildingInfo.name = buildPriority.name
+                        buildingInfo.current = buildPriority.current
+
+                        buildingsToUpgrade.push(buildingInfo);
+
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    return buildingsToUpgrade;
+}
+
+
 
 function deductCosts(building, remainingResources) {
     resourceTypes = ["coal", "ore", "copper", "uranium"]
@@ -829,6 +1133,32 @@ async function findBuildingsToUpgrade(user, userData, outputNode) {
     console.dir(buildingsTransactions)
     return buildingsTransactions;
 }
+
+async function findNewBuildTransactions(user, outputNode) {
+    let buildingsTransactions = [];
+
+    // Fetch user data for user
+    let userDataEntry = fetchUserDataFromStorage(user)
+
+    for (const planet of userDataEntry.planets) {
+        // Only process for "new build" planets
+        if (planet.build === "new") {
+            let planetData = await getPlanetResources(planet.id);
+            let planetResources = await calculateCurrentResources(planetData);
+            let buildingsData = await getBuildings(planet.id);
+            let buildingsToUpgrade = await newBuildTransactionsForPlanet(planet.id, planetResources, buildingsData)
+            for (const upgrade of buildingsToUpgrade) {
+                outputNode.innerHTML += upgrade.type + " " + upgrade.planetId + " " + upgrade.name + " " + upgrade.current + "<br>"
+                buildingsTransactions.push(upgrade)
+            }
+        }
+    }
+    console.dir(buildingsTransactions)
+    return buildingsTransactions;
+
+}
+
+
 
 async function findShipsToBuild(user, userData, outputNode) {
     /*

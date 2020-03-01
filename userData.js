@@ -89,46 +89,143 @@ let planetOrderForShipSales = [
 ];
 
 
-async function createUserData(user) {
+async function updateAndStoreUserData(user, updateType) {
+    console.log("updating user data", updateType)
 
-    console.log("creating user data")
-    let userDataEntry = {}
-    userDataEntry["user"] = user;
-    userDataEntry["planets"] = [];
+    // Fetch previous userData of user in userDataStore of local storage (already parsed and correct user extracted - else false)
+    let previousUserData = fetchUserDataFromStorage(user)
+
+    // If no previous user data create basis for object, otherwise use existing user data
+    let userDataEntry = {};
+    if (previousUserData === false) {
+        userDataEntry["user"] = user;
+        userDataEntry["planets"] = [];
+    } else {
+        userDataEntry = previousUserData;
+    }
+
+    // Get planet list from API
+    let dataPlanets = await getPlanetsOfUser(user);
+
+    // Mark as disposed those planets that are missing (burned, sold etc)
+    for (const [i, planet] of userDataEntry.planets.entries()) {
+        let dataPlanetsIndex = dataPlanets.planets.findIndex(entry => entry.id === planet.id);
+        // Prior existing planet no longer in data planets - mark status as disposed
+        if (dataPlanetsIndex === -1) {
+            userDataEntry.planets[i].status = 'disposed'
+        }
+    }
+
+    // Loop through planets from API and add any new planets to userDataEntry
+
+    for (const [i, planet] of dataPlanets.planets.entries()) {
+        let userDataPlanetsIndex = userDataEntry.planets.findIndex(entry => entry.id === planet.id);
+        // Planet not previously existing - add to userDataEntry with details
+        if (userDataPlanetsIndex === -1) {
+            console.log(i, "new planet", planet.name)
+            let planetData = {};
+            planetData["id"] = planet.id; // updating - never
+            planetData["name"] = planet.name; // update below
+            planetData["date"] = planet.date; // updating - never
+            planetData["planetCoords"] = [planet.posx, planet.posy]; // updating - never
+            planetData["status"] = 'new';
+            planetData["exploreDerived"] = true;
+            planetData["shortestDistance"] = 0;
+            planetData["exploreOverride"] = false;
+            planetData["focusOverride"] = false;
+            planetData["buildOverride"] = false;
+            console.log(planetData)
+            userDataEntry.planets.push(planetData)
+        } else {
+            userDataEntry.planets[userDataPlanetsIndex].name = planet.name; // update in case of name change
+            if (userDataEntry.planets[userDataPlanetsIndex].status == 'new') {
+                userDataEntry.planets[userDataPlanetsIndex].status = 'normal';
+            }
+
+        }
+
+    }
+
+    // Sort planets by most recent discovery
+    userDataEntry.planets.sort((a, b) => b.date - a.date);
+
+    // build:
+    // - new: focus on mines, base and shipyard
+    // - mature: - all buildings pushed to 18
+    // - none: (user setting) - building halted as Yamato / explorer II etc
+
+
 
     let userMissions = await getLimitedUserMissions(user, 800)
 
 
-    let userPlanetPriorityData = fetchUserPlanetPriorityData(user);
-    let doNotBuildData = fetchDoNotBuildData(user);
-    let minimumShipPriorityData = fetchMinimumShipPriorityData(user);
+    //let userPlanetPriorityData = fetchUserPlanetPriorityData(user);
+    //let doNotBuildData = fetchDoNotBuildData(user);
+    //let minimumShipPriorityData = fetchMinimumShipPriorityData(user);
 
-    let dataPlanets = await getPlanetsOfUser(user);
-    dataPlanets.planets.sort((a, b) => b.date - a.date);
+
+
+    // Sort planets by most recent discovery
+    //dataPlanets.planets.sort((a, b) => b.date - a.date);
     //dataPlanets.planets.sort((a, b) => a.date - b.date);
-    let i = 0;
-    console.dir(dataPlanets)
-    for (const planet of dataPlanets.planets) {
 
-        if (i<=1) {
-            let galaxyData = await getGalaxy(planet.posx, planet.posy, 48, 48);
+
+
+    // Loop through all planets and update criteria
+    for (const [i, planet] of userDataEntry.planets.entries()) {
+
+        //if (i<=1) {
+
             //console.dir(galaxyData)
-            let planetCoords = [planet.posx, planet.posy]
+            //let planetCoords = [planet.posx, planet.posy]
 
-            let space = checkAvailableExploration(planetCoords, galaxyData)
-            let exploreFromThisPlanet = true
-
-            let shortestDistance = 0
-            if (space.length == 0) {
-                exploreFromThisPlanet = false
-            } else {
-                //console.dir(space)
-                shortestDistance = space[0].distance
-                //console.log(shortestDistance)
+            // Find available exploration - ignore is exploration already set to false
+            if ( (updateType === "full" && planet.exploreDerived === true) || (updateType === "minor" && planet.status === "new")) {
+                console.log(i, "galaxyData")
+                let galaxyData = await getGalaxy(planet.planetCoords[0], planet.planetCoords[1], 48, 48);
+                let spacesAvailable = checkAvailableExploration(planet.planetCoords, galaxyData);
+                if (spacesAvailable.length === 0) {
+                    userDataEntry.planets[i]["exploreDerived"] = false;
+                } else {
+                    userDataEntry.planets[i]["shortestDistance"] = spacesAvailable[0].distance.toFixed(2);
+                }
             }
 
+            // Apply explore override
+            if (planet.exploreOverride !== false) {
+                userDataEntry.planets[i]["explore"] = userDataEntry.planets[i]["exploreOverride"];
+            } else {
+                userDataEntry.planets[i]["explore"] = userDataEntry.planets[i]["exploreDerived"];
+            }
+
+            // Set focus and build criteria
+            if (planet.explore === true) {
+                userDataEntry.planets[i]["focusDerived"] = "explore";
+                userDataEntry.planets[i]["buildDerived"] = "new";
+            } else {
+                userDataEntry.planets[i]["focusDerived"] = "develop";
+                userDataEntry.planets[i]["buildDerived"] = "develop";
+            }
+
+
+
+            if (planet.focusOverride !== false) {
+                userDataEntry.planets[i]["focus"] = userDataEntry.planets[i]["focusOverride"];
+            } else {
+                userDataEntry.planets[i]["focus"] = userDataEntry.planets[i]["focusDerived"];
+            }
+
+            if (planet.buildOverride !== false) {
+                userDataEntry.planets[i]["build"] = userDataEntry.planets[i]["buildOverride"];
+            } else {
+                userDataEntry.planets[i]["build"] = userDataEntry.planets[i]["buildDerived"];
+            }
+
+
             //let exploreFromThisPlanet = userPlanetPriorityData.planets.includes(planet.id);
-            let buildOnThisPlanet = !doNotBuildData.planets.includes(planet.id);
+            //let buildOnThisPlanet = !doNotBuildData.planets.includes(planet.id);
+
+            /*
 
             let minimumShipPriorityPlanetIndex = minimumShipPriorityData.planets.findIndex(entry => entry.id == planet.id);
             minimumShipPriority = 0;
@@ -139,10 +236,13 @@ async function createUserData(user) {
             let planetUserMissions = userMissions.filter(mission => mission.from_planet.id == planet.id);
 
             planetData = {};
-            planetData["id"] = planet.id;
-            planetData["name"] = planet.name;
-            planetData["planetCoords"] = planetCoords
-            planetData["build"] = buildOnThisPlanet;
+            planetData["id"] = planet.id; // updating - never
+            planetData["name"] = planet.name; // updating - always, can change at any time
+            planetData["planetCoords"] = planetCoords; // updating - never
+            planetData["focus"] = planetFocus; // updating - never
+            planetData["focusOverride"] = userData; // updating - never
+            planetData["build"] = buildOnThisPlanet; // check if criteria for
+
             planetData["shipbuild"] = true;
             planetData["minimumShipPriority"] = minimumShipPriority;
             planetData["explore"] = exploreFromThisPlanet;
@@ -164,13 +264,20 @@ async function createUserData(user) {
 
             userDataEntry.planets.push(planetData)
             console.dir(planetData)
-        }
-        i+=1;
+
+            */
+        //}
     }
 
-    userDataEntry["userAvailableMissions"] = planetData["planetMissionInfo"].user_unused;
+    //userDataEntry["userAvailableMissions"] = planetData["planetMissionInfo"].user_unused;
 
-    userDataStore.push(userDataEntry);
+    //userDataStore.push(userDataEntry);
+
+    // Store updated user data  for user
+    setUserDataInStorage(user, userDataEntry)
+
+    // Return user data for user
+    return userDataEntry;
 }
 
 function checkAvailableExploration(planetCoords, galaxyData) {
@@ -209,6 +316,39 @@ function checkAvailableExploration(planetCoords, galaxyData) {
 }
 
 
+function fetchUserDataFromStorage(user) {
+    let result = false
+    let allUserData = getItemFromLocalStorage('userData')
+    if (allUserData) {
+        let allUserDataParsed = JSON.parse(allUserData)
+        let userIndex = allUserDataParsed.findIndex(data => data.user == user);
+        if (userIndex > -1) {
+            result = allUserDataParsed[userIndex];
+        }
+    }
+    return result;
+}
+
+function setUserDataInStorage(user, userDataEntry) {
+    let finalParsedDataToStore = {};
+    let allUserData = getItemFromLocalStorage('userData')
+    if (allUserData) {
+        allUserDataParsed = JSON.parse(allUserData)
+        let userIndex = allUserDataParsed.findIndex(data => data.user === user);
+        if (userIndex > -1) {
+            allUserDataParsed[userIndex] = userDataEntry;
+            finalParsedDataToStore = allUserDataParsed;
+        } else {
+            allUserDataParsed.push(userDataEntry);
+            finalParsedDataToStore = allUserDataParsed;
+        }
+    } else {
+        finalParsedDataToStore = [userDataEntry];
+    }
+    let stringData = JSON.stringify(finalParsedDataToStore);
+
+    setItemInLocalStorage('userData', stringData)
+}
 
 function fetchUserData(user) {
     let userIndex = userDataStore.findIndex(data => data.user == user);
@@ -237,4 +377,15 @@ function findIndexInShipMarket(shipType) {
 function fetchUserPlanetOrderForShipSales(user) {
     let userIndex = planetOrderForShipSales.findIndex(data => data.user == user);
     return planetOrderForShipSales[userIndex];
+}
+
+// STORAGE
+
+function setItemInLocalStorage(item, value) {
+    localStorage.setItem(item, value);
+}
+
+function getItemFromLocalStorage(item) {
+    const value = localStorage.getItem(item);
+    return (value !== null) ? value : false;
 }
