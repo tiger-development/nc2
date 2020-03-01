@@ -555,7 +555,7 @@ async function runLoginMission(user, userData, mission, maxProcess, explorerRang
         console.log("runLoginMission - build - new")
         let transactions = await findNewBuildTransactions(user, outputNode)
         //upgradeBuilding(user, "P-Z142YAEQFO0", "shieldgenerator")
-        processKeychainTransactions(user, buildingsTransactions, maxProcess, 500);
+        processKeychainTransactions(user, transactions, maxProcess, 500);
 
     } else if (mission == "send explorers") {
         console.log("runLoginMission - send explorers")
