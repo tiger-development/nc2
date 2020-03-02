@@ -93,7 +93,11 @@ async function updateAndStoreUserData(user, updateType) {
     console.log("updating user data", updateType)
 
     // Fetch previous userData of user in userDataStore of local storage (already parsed and correct user extracted - else false)
-    let previousUserData = fetchUserDataFromStorage(user)
+    let previousUserData = false
+    if (updateType != "reset") {
+        previousUserData = fetchUserDataFromStorage(user)
+    }
+
 
     // If no previous user data create basis for object, otherwise use existing user data
     let userDataEntry = {};
@@ -204,7 +208,7 @@ async function updateAndStoreUserData(user, updateType) {
             //let planetCoords = [planet.posx, planet.posy]
 
             // Find available exploration - ignore is exploration already set to false
-            if ( (updateType === "full" && planet.exploreDerived === true) || (updateType === "minor" && planet.status === "new")) {
+            if ( (updateType === "reset") || (updateType === "full" && planet.exploreDerived === true) || (updateType === "minor" && planet.status === "new")) {
                 console.log(i, "galaxyData")
                 let galaxyData = await getGalaxy(planet.planetCoords[0], planet.planetCoords[1], 48, 48);
                 let spacesAvailable = checkAvailableExploration(planet.planetCoords, galaxyData);

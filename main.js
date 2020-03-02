@@ -557,23 +557,16 @@ async function runLoginMission(user, userData, mission, maxProcess, explorerRang
         check(user)
     } else if (mission == "build ships") {
         console.log("runLoginMission - build ships")
-        //buildShip(user, "P-ZCBO9MBOJ2O", "corvette")
         let transactions = await findShipsToBuild(user, userData, outputNode)
         transactionDelay = 500;
-
     } else if (mission == "upgrade buildings") {
         console.log("runLoginMission - upgrade buildings")
         let transactions = await findBuildingsToUpgrade(user, userData, outputNode)
         transactionDelay = 500;
-        //upgradeBuilding(user, "P-Z142YAEQFO0", "shieldgenerator")
-        // buildShip(user, "P-ZCBO9MBOJ2O", "corvette")
-        //upgradeBuilding(user, planetId, buildingName)
     } else if (mission == "build - new") {
         console.log("runLoginMission - build - new")
         let transactions = await findNewBuildTransactions(user, outputNode)
         transactionDelay = 500;
-        //upgradeBuilding(user, "P-Z142YAEQFO0", "shieldgenerator")
-
     } else if (mission == "send explorers") {
         console.log("runLoginMission - send explorers")
         let transactions = await findExplorationTransactions(user, userData, explorerRange, outputNode)
@@ -585,10 +578,11 @@ async function runLoginMission(user, userData, mission, maxProcess, explorerRang
     } else if (mission == "sell ships") {
         console.log("runLoginMission - sell ships")
         let transactions = await findMarketTrades(user, userData, outputNode)
-
         transactionDelay = 500;
+    } else if (mission == "reset data") {
+        await updateAndStoreUserData(user, "reset");
     }
-    //processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
+    processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
 }
 
 async function runInfoMission(user, userData, mission, explorerRange, xCoordinate, yCoordinate, outputNode) {
