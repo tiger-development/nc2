@@ -1560,7 +1560,7 @@ async function findExplorationTransactions(user, userData, explorerRange, output
         if (planet.shortestDistance < explorerRange) {
             galaxyData[i] = await getGalaxy(planetCoords[0], planetCoords[1], explorerRange*2, explorerRange*2);
 
-            ////console.dir(galaxyData[i])
+            console.dir(galaxyData[i])
             space[i] = [];
             let xmin = galaxyData[i].area.xmin;
             let xmax = galaxyData[i].area.xmax;
