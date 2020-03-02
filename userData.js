@@ -131,6 +131,11 @@ async function updateAndStoreUserData(user, updateType) {
             explorerTwoAvailable = planetFleetInfo[explorerTwoFleetIndex].quantity;
         }
 
+        let planetMissionInfo = await getPlanetMissionInfo(user, planet.id);
+        if (i===0) {
+            userDataEntry["userAvailableMissions"] = planetMissionInfo.user_unused;
+        }
+
         let userDataPlanetsIndex = userDataEntry.planets.findIndex(entry => entry.id === planet.id);
         // Planet not previously existing - add to userDataEntry with details
         if (userDataPlanetsIndex === -1) {
@@ -140,7 +145,9 @@ async function updateAndStoreUserData(user, updateType) {
             planetData["name"] = planet.name; // update below
             planetData["date"] = planet.date; // updating - never
             planetData["planetCoords"] = [planet.posx, planet.posy]; // updating - never
-            planetData["planetMissionInfo"] = await getPlanetMissionInfo(user, planet.id);
+            planetData["planetMissionInfo"] = planetMissionInfo;
+            console.log(planet.name, planet.id)
+            console.dir(planetMissionInfo)
             planetData["planetFleetInfo"] = planetFleetInfo;
             planetData["explorerOneAvailable"] = explorerOneAvailable;
             planetData["explorerTwoAvailable"] = explorerTwoAvailable;
@@ -155,7 +162,9 @@ async function updateAndStoreUserData(user, updateType) {
             userDataEntry.planets.push(planetData)
         } else {
             userDataEntry.planets[userDataPlanetsIndex].name = planet.name; // update in case of name change
-            userDataEntry.planets[userDataPlanetsIndex]["planetMissionInfo"] = await getPlanetMissionInfo(user, planet.id);
+            userDataEntry.planets[userDataPlanetsIndex]["planetMissionInfo"] = planetMissionInfo;
+            console.log(planet.name, planet.id)
+            console.dir(planetMissionInfo)
             userDataEntry.planets[userDataPlanetsIndex]["planetFleetInfo"] = planetFleetInfo;
             userDataEntry.planets[userDataPlanetsIndex]["explorerOneAvailable"] = explorerOneAvailable;
             userDataEntry.planets[userDataPlanetsIndex]["explorerTwoAvailable"] = explorerTwoAvailable;
@@ -282,7 +291,7 @@ async function updateAndStoreUserData(user, updateType) {
         //}
     }
 
-    //userDataEntry["userAvailableMissions"] = planetData["planetMissionInfo"].user_unused;
+
 
     //userDataStore.push(userDataEntry);
 

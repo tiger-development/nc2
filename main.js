@@ -1,5 +1,18 @@
 // TO DO
 
+// ----- MONDAY ----
+// Issue with mission data not being up to date when explorers launched
+// - e.g. missions available if explorers just previously run
+// - Need to work out which userData needs recalculation for each mission type
+
+// Total mission amount not working
+
+// Get one planet at a time for user data and update planet table
+
+// Clear planet table on logout / refresh (since user data recalculated)
+
+
+
 // ----- USER DATA ----
 // Check when user data last obtained (store this)
 // If never then full user data
@@ -53,6 +66,9 @@ window.addEventListener('load', async (event) => {
 
     // Get planets elements
     const planetsTable = document.getElementById('planetsTable');
+
+    // Get transaction elements
+    const transationsTable = document.getElementById('transationsTable');
 
     // Get login elements
     const usernameSelect = document.getElementById('usernameSelect');
@@ -297,7 +313,7 @@ window.addEventListener('load', async (event) => {
         // Create row for table and label it with planet id
         let headerRow = document.createElement("div")
         headerRow.setAttribute('id', "headerRow");
-        headerRow.setAttribute('class', "planetsTable");
+        headerRow.setAttribute('class', "table");
         planetsTable.appendChild(headerRow);
 
         for (let i = 0; i < columnHeaders.length; i+=1) {
@@ -329,7 +345,7 @@ window.addEventListener('load', async (event) => {
             // Create row for table and label it with planet id
             let newRow = document.createElement("div")
             newRow.setAttribute('id', planet.id);
-            newRow.setAttribute('class', "planetsTable");
+            newRow.setAttribute('class', "table");
             planetsTable.appendChild(newRow);
 
 
@@ -498,7 +514,7 @@ window.addEventListener('load', async (event) => {
         e.preventDefault();
 
         const mission = infoMissionSelect.value;
-        const explorerRange = explorerRangeField.value;
+        const explorerRange = parseFloat(explorerRangeField.value);
         const xCoordinate = xCoordinateField.value;
         const yCoordinate = yCoordinateField.value;
 
@@ -535,41 +551,44 @@ let workFlowMonitor = true
 async function runLoginMission(user, userData, mission, maxProcess, explorerRange, xCoordinate, yCoordinate, outputNode) {
     outputNode.innerHTML = "";
     missionLaunchTime = Date.now();
+    let transactionDelay = 3000;
 
     if (mission == "check") {
         check(user)
     } else if (mission == "build ships") {
         console.log("runLoginMission - build ships")
         //buildShip(user, "P-ZCBO9MBOJ2O", "corvette")
-        let buildShipTransactions = await findShipsToBuild(user, userData, outputNode)
-        processKeychainTransactions(user, buildShipTransactions, maxProcess, 500);
+        let transactions = await findShipsToBuild(user, userData, outputNode)
+        transactionDelay = 500;
 
     } else if (mission == "upgrade buildings") {
         console.log("runLoginMission - upgrade buildings")
-        let buildingsTransactions = await findBuildingsToUpgrade(user, userData, outputNode)
+        let transactions = await findBuildingsToUpgrade(user, userData, outputNode)
+        transactionDelay = 500;
         //upgradeBuilding(user, "P-Z142YAEQFO0", "shieldgenerator")
-        processKeychainTransactions(user, buildingsTransactions, maxProcess, 500);
         // buildShip(user, "P-ZCBO9MBOJ2O", "corvette")
         //upgradeBuilding(user, planetId, buildingName)
     } else if (mission == "build - new") {
         console.log("runLoginMission - build - new")
         let transactions = await findNewBuildTransactions(user, outputNode)
+        transactionDelay = 500;
         //upgradeBuilding(user, "P-Z142YAEQFO0", "shieldgenerator")
-        processKeychainTransactions(user, transactions, maxProcess, 500);
 
     } else if (mission == "send explorers") {
         console.log("runLoginMission - send explorers")
-        let explorationTransactions = await findExplorationTransactions(user, userData, explorerRange, outputNode)
-        processKeychainTransactions(user, explorationTransactions, maxProcess, 3000);
+        let transactions = await findExplorationTransactions(user, userData, explorerRange, outputNode)
+        transactionDelay = 3000;
     } else if (mission == "send explorerII") {
         console.log("runLoginMission - send explorerII")
-        let explorationTransactions = await findExplorerTwoTransactions(user, userData, explorerRange, xCoordinate, yCoordinate, outputNode)
-        processKeychainTransactions(user, explorationTransactions, maxProcess, 3000);
+        let transactions = await findExplorerTwoTransactions(user, userData, explorerRange, xCoordinate, yCoordinate, outputNode)
+        transactionDelay = 3000;
     } else if (mission == "sell ships") {
         console.log("runLoginMission - sell ships")
-        let askTransactions = await findMarketTrades(user, userData, outputNode, 500)
-        processKeychainTransactions(user, askTransactions, maxProcess);
+        let transactions = await findMarketTrades(user, userData, outputNode)
+
+        transactionDelay = 500;
     }
+    //processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
 }
 
 async function runInfoMission(user, userData, mission, explorerRange, xCoordinate, yCoordinate, outputNode) {
@@ -1536,6 +1555,8 @@ async function findExplorationTransactions(user, userData, explorerRange, output
         outputNode.innerHTML += planet.id + " " + planet.name + ":<br>";
         outputNode.innerHTML += "available missions: " + availableMissions + " available explorers: " + explorersAvailable + " shortest distance: " + planet.shortestDistance + "<br>";
 
+        console.log(planet.id, planet.name)
+        console.log(planet.shortestDistance, explorerRange)
         if (planet.shortestDistance < explorerRange) {
             galaxyData[i] = await getGalaxy(planetCoords[0], planetCoords[1], explorerRange*2, explorerRange*2);
 
@@ -1648,7 +1669,7 @@ async function findExplorationTransactions(user, userData, explorerRange, output
             //proposedExplorations[i] = proposedExplorations[i].slice(0, availableExplorerMissions);
             //console.log(proposedExplorations[i])
             proposedExplorations[i] = snipeOpportunities.concat(nonSnipeExplorations);
-            console.log(proposedExplorations[i])
+            //console.log(proposedExplorations[i])
             /*
             let reportingExplorations = space[i].filter(space => space.explored == false);
             reportingExplorations = reportingExplorations.filter(space => space.priorTransaction == false);
