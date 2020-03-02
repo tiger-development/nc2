@@ -498,7 +498,7 @@ window.addEventListener('load', async (event) => {
 
         const mission = loginMissionSelect.value;
         const maxProcess = maxProcessField.value;
-        const explorerRange = explorerRangeField.value;
+        const explorerRange = parseFloat(explorerRangeField.value);
         const xCoordinate = xCoordinateField.value;
         const yCoordinate = yCoordinateField.value;
 
