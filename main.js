@@ -1556,7 +1556,7 @@ async function findExplorationTransactions(user, userData, explorerRange, output
         outputNode.innerHTML += "available missions: " + availableMissions + " available explorers: " + explorersAvailable + " shortest distance: " + planet.shortestDistance + "<br>";
 
         console.log(planet.id, planet.name)
-        console.log(planet.shortestDistance, explorerRange)
+        console.log(planet.shortestDistance, explorerRange, planet.shortestDistance < explorerRange)
         if (planet.shortestDistance < explorerRange) {
             galaxyData[i] = await getGalaxy(planetCoords[0], planetCoords[1], explorerRange*2, explorerRange*2);
 

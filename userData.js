@@ -215,7 +215,7 @@ async function updateAndStoreUserData(user, updateType) {
                 if (spacesAvailable.length === 0) {
                     userDataEntry.planets[i]["exploreDerived"] = false;
                 } else {
-                    userDataEntry.planets[i]["shortestDistance"] = spacesAvailable[0].distance.toFixed(2);
+                    userDataEntry.planets[i]["shortestDistance"] = parseFloat(spacesAvailable[0].distance.toFixed(2));
                 }
             }
 
