@@ -1650,17 +1650,19 @@ async function findExplorationTransactions(user, userData, explorerRange, output
             }
             //console.log(space[i])
             proposedExplorations[i] = space[i].filter(space => space.explored == false);
-            //console.log(proposedExplorations[i])
+            console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.priorTransaction == false);
-            //console.log(proposedExplorations[i])
+            console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.underSearch == false);
+            console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.sniped != "lost");
+            console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.returnHour > reopenHour);
-            //console.log(proposedExplorations[i])
+            console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.planet == false);
-            //console.log(proposedExplorations[i])
+            console.log(proposedExplorations[i])
             proposedExplorations[i].sort((a, b) => a.distance - b.distance);
-            //console.log(proposedExplorations[i])
+            console.log(proposedExplorations[i])
             snipeOpportunities = proposedExplorations[i].filter(space => space.sniped == "opportunity");
             snipeOpportunities = snipeOpportunities.slice(0, availableExplorerMissions);
 
@@ -1669,7 +1671,7 @@ async function findExplorationTransactions(user, userData, explorerRange, output
             //proposedExplorations[i] = proposedExplorations[i].slice(0, availableExplorerMissions);
             //console.log(proposedExplorations[i])
             proposedExplorations[i] = snipeOpportunities.concat(nonSnipeExplorations);
-            //console.log(proposedExplorations[i])
+            console.log(proposedExplorations[i])
             /*
             let reportingExplorations = space[i].filter(space => space.explored == false);
             reportingExplorations = reportingExplorations.filter(space => space.priorTransaction == false);
