@@ -559,30 +559,36 @@ async function runLoginMission(user, userData, mission, maxProcess, explorerRang
         console.log("runLoginMission - build ships")
         let transactions = await findShipsToBuild(user, userData, outputNode)
         transactionDelay = 500;
+        processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
     } else if (mission == "upgrade buildings") {
         console.log("runLoginMission - upgrade buildings")
         let transactions = await findBuildingsToUpgrade(user, userData, outputNode)
         transactionDelay = 500;
+        processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
     } else if (mission == "build - new") {
         console.log("runLoginMission - build - new")
         let transactions = await findNewBuildTransactions(user, outputNode)
         transactionDelay = 500;
+        processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
     } else if (mission == "send explorers") {
         console.log("runLoginMission - send explorers")
         let transactions = await findExplorationTransactions(user, userData, explorerRange, outputNode)
         transactionDelay = 3000;
+        processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
     } else if (mission == "send explorerII") {
         console.log("runLoginMission - send explorerII")
         let transactions = await findExplorerTwoTransactions(user, userData, explorerRange, xCoordinate, yCoordinate, outputNode)
         transactionDelay = 3000;
+        processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
     } else if (mission == "sell ships") {
         console.log("runLoginMission - sell ships")
         let transactions = await findMarketTrades(user, userData, outputNode)
         transactionDelay = 500;
+        processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
     } else if (mission == "reset data") {
         await updateAndStoreUserData(user, "reset");
     }
-    processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
+
 }
 
 async function runInfoMission(user, userData, mission, explorerRange, xCoordinate, yCoordinate, outputNode) {
