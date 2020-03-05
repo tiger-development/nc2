@@ -90,12 +90,30 @@ let planetOrderForShipSales = [
 
 
 async function updateAndStoreUserData(user, updateType) {
+
+    // API Calls
+    // -----------------
+
+    // getPlanetsOfUser
+    // - The userData update should be focused around this
+
+    // getPlanetFleet
+    // - user to determine number of explorer1 and explorer2 to explore
+    // - this should be done at the start of an explorer transaction search
+    // - however it should be stored - 
+
+
+    const updateStartTime = Date.now();
+    let operationStartTime = Date.now();
     console.log("updating user data", updateType)
 
     // Fetch previous userData of user in userDataStore of local storage (already parsed and correct user extracted - else false)
     let previousUserData = false
     if (updateType != "reset") {
+        operationStartTime = Date.now();
+        console.log("time from start of update", (operationStartTime - missionLaunchTime)/1000);
         previousUserData = fetchUserDataFromStorage(user)
+        console.log("fetchUserDataFromStorage - operation took: ", (Date.now() - operationStartTime)/1000)
     }
 
 
@@ -109,9 +127,14 @@ async function updateAndStoreUserData(user, updateType) {
     }
 
     // Get planet list from API
+    operationStartTime = Date.now();
+    console.log("time from start of update", (operationStartTime - missionLaunchTime)/1000);
     let dataPlanets = await getPlanetsOfUser(user);
+    console.log("getPlanetsOfUser - operation took: ", (Date.now() - operationStartTime)/1000)
 
     // Mark as disposed those planets that are missing (burned, sold etc)
+    operationStartTime = Date.now();
+    console.log("time from start of update", (operationStartTime - missionLaunchTime)/1000);
     for (const [i, planet] of userDataEntry.planets.entries()) {
         let dataPlanetsIndex = dataPlanets.planets.findIndex(entry => entry.id === planet.id);
         // Prior existing planet no longer in data planets - mark status as disposed
@@ -119,11 +142,16 @@ async function updateAndStoreUserData(user, updateType) {
             userDataEntry.planets[i].status = 'disposed'
         }
     }
+    console.log("mark as disposed - operation took: ", (Date.now() - operationStartTime)/1000)
 
     // Loop through planets from API and add any new planets to userDataEntry / update old planets
+    operationStartTime = Date.now();
+    console.log("time from start of update", (operationStartTime - missionLaunchTime)/1000);
     for (const [i, planet] of dataPlanets.planets.entries()) {
+        subOperationStartTime = Date.now();
 
         let planetFleetInfo = await getPlanetFleet(user, planet.id);
+
         let explorerOneFleetIndex = planetFleetInfo.findIndex(fleet => fleet.type == "explorership");
         let explorerOneAvailable = 0;
         if (explorerOneFleetIndex != -1) {
@@ -134,7 +162,11 @@ async function updateAndStoreUserData(user, updateType) {
         if (explorerTwoFleetIndex != -1) {
             explorerTwoAvailable = planetFleetInfo[explorerTwoFleetIndex].quantity;
         }
+        if (i==0) {
+            console.log("planetFleetInfo - operation took: ", (Date.now() - subOperationStartTime)/1000)
+        }
 
+        subOperationStartTime = Date.now();
         let planetMissionInfo = await getPlanetMissionInfo(user, planet.id);
         if (i===0) {
             userDataEntry["userAvailableMissions"] = planetMissionInfo.user_unused;
@@ -176,11 +208,16 @@ async function updateAndStoreUserData(user, updateType) {
                 userDataEntry.planets[userDataPlanetsIndex].status = 'normal';
             }
         }
-
+        if (i==0) {
+            console.log("planetMissionInfo - operation took: ", (Date.now() - subOperationStartTime)/1000)
+        }
     }
+    console.log("add any new planets / update previous - operation took: ", (Date.now() - operationStartTime)/1000)
 
     // Sort planets by most recent discovery
+    operationStartTime = Date.now();
     userDataEntry.planets.sort((a, b) => b.date - a.date);
+    console.log("sort - operation took: ", (Date.now() - operationStartTime)/1000)
 
     // build:
     // - new: focus on mines, base and shipyard
@@ -189,16 +226,15 @@ async function updateAndStoreUserData(user, updateType) {
 
 
 
-    let userMissions = await getLimitedUserMissions(user, 800)
-
-
     //let minimumShipPriorityData = fetchMinimumShipPriorityData(user);
 
 
+    //operationStartTime = Date.now();
+    //let userMissions = await getLimitedUserMissions(user, 800)
+    //console.log("getLimitedUserMissions - operation took: ", (Date.now() - operationStartTime)/1000)
 
 
-
-
+    operationStartTime = Date.now();
     // Loop through all planets and update criteria
     for (const [i, planet] of userDataEntry.planets.entries()) {
 
@@ -294,7 +330,7 @@ async function updateAndStoreUserData(user, updateType) {
             */
         //}
     }
-
+    console.log("galaxyData - operation took: ", (Date.now() - operationStartTime)/1000)
 
 
     //userDataStore.push(userDataEntry);

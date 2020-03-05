@@ -275,7 +275,8 @@ window.addEventListener('load', async (event) => {
         const userDataTime = Date.now();
         setItemInLocalStorage('userDataTime', userDataTime)
 
-        if ((userDataTime - previousUserDataTime) < (1000 * 60 * 60)) {
+
+        if ((userDataTime - previousUserDataTime) < (1000 * 60 * 60 * 24)) {
             updateType = "minor"
         }
 
@@ -908,9 +909,11 @@ async function newBuildTransactionsForPlanet(planetId, resources, buildings) {
     console.dir(resources)
     console.dir(buildings)
 
-    let maximumLevel = 14;
+    let maximumLevel = 13;
 
-    let buildingsPriority = [
+    let buildingsPriority = []
+
+    let buildingsPriorityOne = [
         {name: "base", priority: 1},
         {name: "coalmine", priority: 1},
         {name: "oremine", priority: 1},
@@ -925,6 +928,30 @@ async function newBuildTransactionsForPlanet(planetId, resources, buildings) {
         {name: "bunker", priority: 7},
         {name: "shieldgenerator", priority: 7},
     ]
+
+    let buildingsPriorityTwo = [
+        {name: "base", priority: 1},
+        {name: "coalmine", priority: 1},
+        {name: "oremine", priority: 1},
+        {name: "coppermine", priority: 1},
+        {name: "uraniummine", priority: 1},
+        {name: "shipyard", priority: 1},
+        {name: "coaldepot", priority: 4},
+        {name: "oredepot", priority: 4},
+        {name: "copperdepot", priority: 4},
+        {name: "uraniumdepot", priority: 4},
+        {name: "researchcenter", priority: 6},
+        {name: "bunker", priority: 7},
+        {name: "shieldgenerator", priority: 7},
+    ]
+
+    let uranimumMineIndex = buildings.findIndex(building => building.name == "uraniummine");
+    let uraniumMineLevel = buildings[uranimumMineIndex].current;
+    if (uraniumMineLevel < 12) {
+        buildingsPriority = buildingsPriorityOne;
+    } else {
+        buildingsPriority = buildingsPriorityTwo;
+    }
 
     let buildingsToUpgrade = [];
 
