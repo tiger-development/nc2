@@ -94,13 +94,21 @@ async function updateAndStoreUserData(user, updateType) {
     // API Calls
     // -----------------
 
+
+
+
     // getPlanetsOfUser
     // - The userData update should be focused around this
 
     // getPlanetFleet
+    // - returns ships in fleet
     // - user to determine number of explorer1 and explorer2 to explore
     // - this should be done at the start of an explorer transaction search
-    // - however it should be stored - 
+    // - ? however it should be stored and considered valid between E1 and E2 ?
+    // - ? or updated at the end ?
+
+    // getPlanetMissionInfo
+    // - returns planet missions and overall user missions used and available
 
 
     const updateStartTime = Date.now();
@@ -189,10 +197,12 @@ async function updateAndStoreUserData(user, updateType) {
             planetData["explorerTwoAvailable"] = explorerTwoAvailable;
             planetData["status"] = 'new';
             planetData["exploreDerived"] = true;
+            planetData["shipbuildDerived"] = "explorer";
             planetData["shortestDistance"] = 0;
             planetData["exploreOverride"] = false;
             planetData["focusOverride"] = false;
             planetData["buildOverride"] = false;
+            planetData["shipbuildOverride"] = false;
 
             console.log(planetData)
             userDataEntry.planets.push(planetData)
@@ -207,6 +217,11 @@ async function updateAndStoreUserData(user, updateType) {
             if (userDataEntry.planets[userDataPlanetsIndex].status == 'new') {
                 userDataEntry.planets[userDataPlanetsIndex].status = 'normal';
             }
+            if (userDataEntry.planets[userDataPlanetsIndex].shipbuildDerived == undefined) {
+                userDataEntry.planets[userDataPlanetsIndex]["shipbuildDerived"] = "none";
+                userDataEntry.planets[userDataPlanetsIndex]["shipbuildOverride"] = false;
+            }
+
         }
         if (i==0) {
             console.log("planetMissionInfo - operation took: ", (Date.now() - subOperationStartTime)/1000)
@@ -252,8 +267,16 @@ async function updateAndStoreUserData(user, updateType) {
                     userDataEntry.planets[i]["exploreDerived"] = false;
                 } else {
                     userDataEntry.planets[i]["shortestDistance"] = parseFloat(spacesAvailable[0].distance.toFixed(2));
+
                 }
             }
+
+            if (userDataEntry.planets[i].exploreDerived === false) {
+                userDataEntry.planets[i].shipbuildDerived = "all";
+            } else {
+                userDataEntry.planets[i].shipbuildDerived = "explorer";
+            }
+
 
             // Apply explore override
             if (planet.exploreOverride !== false) {
@@ -284,6 +307,13 @@ async function updateAndStoreUserData(user, updateType) {
             } else {
                 userDataEntry.planets[i]["build"] = userDataEntry.planets[i]["buildDerived"];
             }
+
+            if (planet.shipbuildOverride !== false) {
+                userDataEntry.planets[i]["shipbuild"] = userDataEntry.planets[i]["shipbuildOverride"];
+            } else {
+                userDataEntry.planets[i]["shipbuild"] = userDataEntry.planets[i]["shipbuildDerived"];
+            }
+
 
 
 

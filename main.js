@@ -308,8 +308,8 @@ window.addEventListener('load', async (event) => {
         console.dir(userData)
         planetsTable.innerHTML = "";
 
-        const columnHeaders = ["Name", "ID", "Coords", "Focus", "Build", "Explore", "Distance"]
-        const columnWidths = ["12%", "12%", "8%", "8%", "8%", "8%", "8%"]
+        const columnHeaders = ["Name", "ID", "Coords", "Focus", "Build", "Shipbuild", "Explore", "Distance"]
+        const columnWidths = ["12%", "12%", "8%", "8%", "8%", "8%", "8%", "8%"]
 
         // Create row for table and label it with planet id
         let headerRow = document.createElement("div")
@@ -367,13 +367,19 @@ window.addEventListener('load', async (event) => {
                 newRow.appendChild(createPlanetDiv("build", planet.build, columnWidths[4], false))
             }
 
-            if (planet.explore === planet.exploreDerived) {
-                newRow.appendChild(createPlanetDiv("explore", planet.explore, columnWidths[5], true))
+            if (planet.shipbuild === planet.shipbuildDerived) {
+                newRow.appendChild(createPlanetDiv("shipbuild", planet.shipbuild, columnWidths[5], true))
             } else {
-                newRow.appendChild(createPlanetDiv("explore", planet.explore, columnWidths[5], false))
+                newRow.appendChild(createPlanetDiv("shipbuild", planet.shipbuild, columnWidths[5], false))
             }
 
-            newRow.appendChild(createPlanetDiv("distance", planet.shortestDistance, columnWidths[6], true))
+            if (planet.explore === planet.exploreDerived) {
+                newRow.appendChild(createPlanetDiv("explore", planet.explore, columnWidths[6], true))
+            } else {
+                newRow.appendChild(createPlanetDiv("explore", planet.explore, columnWidths[6], false))
+            }
+
+            newRow.appendChild(createPlanetDiv("distance", planet.shortestDistance, columnWidths[7], true))
 
             /*
             // Add div for planet name
@@ -406,6 +412,7 @@ window.addEventListener('load', async (event) => {
         planetStates = Object.freeze({
             focus: {values: ["explore", "develop", "resource"], override: "focusOverride", derived: "focusDerived"} ,
             build: {values: ["new", "develop", "none"], override: "buildOverride", derived: "buildDerived"},
+            shipbuild: {values: ["explorer", "all", "none"], override: "shipbuildOverride", derived: "shipbuildDerived"},
             explore: {values: ["true", "false"], override: "exploreOverride", derived: "exploreDerived"}
         });
 
@@ -556,6 +563,11 @@ async function runLoginMission(user, userData, mission, maxProcess, explorerRang
 
     if (mission == "check") {
         check(user)
+    } else if (mission == "build explorers") {
+        console.log("runLoginMission - build explorers")
+        let transactions = await findExplorersToBuild(user, userData, outputNode)
+        transactionDelay = 500;
+        processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
     } else if (mission == "build ships") {
         console.log("runLoginMission - build ships")
         let transactions = await findShipsToBuild(user, userData, outputNode)
@@ -606,6 +618,8 @@ async function runInfoMission(user, userData, mission, explorerRange, xCoordinat
         let transactions = await findNewBuildTransactions(user, outputNode)
     } else if (mission == "ships") {
         let buildShipTransactions = await findShipsToBuild(user, userData, outputNode)
+    } else if (mission == "build explorers") {
+        let transactions = await findExplorersToBuild(user, userData, outputNode)
     } else if (mission == "market") {
         let marketInfo = await findMarketTrades(user, userData, outputNode)
     } else if (mission == "send explorers") {
@@ -1204,6 +1218,59 @@ async function findNewBuildTransactions(user, outputNode) {
 
 }
 
+async function findExplorersToBuild(user, userData, outputNode) {
+    let planetsToBuildExplorers = userData.planets.filter(planet => planet.shipbuild == "explorer")
+
+    let planetData = [];
+    let planetResources = [];
+    let shipyardData = [];
+    let shipsTransactions = [];
+    let i=0;
+
+
+
+
+
+    for (const planet of planetsToBuildExplorers) {
+        planetData[i] = await getPlanetResources(planet.id)
+        planetResources[i] = await calculateCurrentResources(planetData[i])
+        shipyardData[i] = await getPlanetShipyard(user, planet.id)
+
+        let explorerIndex = shipyardData[i].findIndex(entry => entry.type == "explorership")
+        let ship = shipyardData[i][explorerIndex]
+        let buildExplorer = true
+
+        if (shipHasSkills(ship) === false) {
+            buildExplorer = false
+        }
+
+        if (shipbuildingBusy(missionLaunchTime, ship.busy_until) === true) {
+            buildExplorer = false
+        }
+
+        if (checkIfSufficientResourcesForShip(ship, planetResources[i]) === false) {
+            buildExplorer = false
+        }
+
+        if (buildExplorer === true) {
+
+             // Create ship transaction and push to transaction list
+             let shipInfo = {};
+             shipInfo.type = "buildShip";
+             shipInfo.planetId = planet.id;
+             shipInfo.name = "explorership"
+             outputNode.innerHTML += shipInfo.type + " " + shipInfo.planetId + " " + shipInfo.name + "<br>"
+             shipsTransactions.push(shipInfo)
+
+        } else {
+             // Do not build any ships if cannot build
+             console.log(planet.id + " not enough resources to build " + ship.type)
+
+        }
+        i += 1
+    }
+    return shipsTransactions;
+}
 
 
 async function findShipsToBuild(user, userData, outputNode) {
