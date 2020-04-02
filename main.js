@@ -923,7 +923,7 @@ async function newBuildTransactionsForPlanet(planetId, resources, buildings) {
     console.dir(resources)
     console.dir(buildings)
 
-    let maximumLevel = 13;
+    let maximumLevel = 14;
 
     let buildingsPriority = []
 
@@ -950,13 +950,13 @@ async function newBuildTransactionsForPlanet(planetId, resources, buildings) {
         {name: "coppermine", priority: 1},
         {name: "uraniummine", priority: 1},
         {name: "shipyard", priority: 1},
-        {name: "coaldepot", priority: 4},
-        {name: "oredepot", priority: 4},
-        {name: "copperdepot", priority: 4},
-        {name: "uraniumdepot", priority: 4},
-        {name: "researchcenter", priority: 6},
-        {name: "bunker", priority: 7},
-        {name: "shieldgenerator", priority: 7},
+        {name: "coaldepot", priority: 1},
+        {name: "oredepot", priority: 1},
+        {name: "copperdepot", priority: 1},
+        {name: "uraniumdepot", priority: 1},
+        {name: "researchcenter", priority: 1},
+        {name: "bunker", priority: 1},
+        {name: "shieldgenerator", priority: 1},
     ]
 
     let uranimumMineIndex = buildings.findIndex(building => building.name == "uraniummine");
