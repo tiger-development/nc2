@@ -985,7 +985,7 @@ async function newBuildTransactionsForPlanet(planetId, resources, buildings) {
         buildingsPriority[i]["copper"] = buildings[buildingsIndex].copper;
         buildingsPriority[i]["uranium"] = buildings[buildingsIndex].uranium;
 
-        if (priorityCalc < minimumPriorityCalc) {
+        if (priorityCalc < minimumPriorityCalc && checkIfBuildingBusy(missionLaunchTime, buildings[buildingsIndex].busy) == false) {
             minimumPriorityCalc = priorityCalc;
         }
     }
