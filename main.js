@@ -1202,7 +1202,7 @@ async function findNewBuildTransactions(user, outputNode) {
 
     for (const planet of userDataEntry.planets) {
         // Only process for "new build" planets
-        if (planet.build === "new") {
+        if (planet.build === "new" || planet.build === "develop") {
             let planetData = await getPlanetResources(planet.id);
             let planetResources = await calculateCurrentResources(planetData);
             let buildingsData = await getBuildings(planet.id);
