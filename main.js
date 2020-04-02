@@ -1157,7 +1157,7 @@ function checkIfNextSkillCompleted(current, skill) {
 
 async function findBuildingsToUpgrade(user, userData, outputNode) {
 
-    let minimumRequiredSkillLevel = 18;
+    let minimumRequiredSkillLevel = 14;
 
     let planetData = [];
     let planetResources = [];
