@@ -57,7 +57,7 @@ window.addEventListener('load', async (event) => {
 
     // Create object to facilitate switching between sections
     const sections = [
-            {sectionName: "report", sectionTitle: "Strategy Report", sectionLink: reportLink, sectionDiv: reportDiv},
+            {sectionName: "report", sectionTitle: "Season Report", sectionLink: reportLink, sectionDiv: reportDiv},
             {sectionName: "missions", sectionTitle: "Mission Control", sectionLink: missionsLink, sectionDiv: missionsDiv},
             {sectionName: "planets", sectionTitle: "Planet Classification", sectionLink: planetsLink, sectionDiv: planetsDiv},
             {sectionName: "login", sectionTitle: "Login", sectionLink: loginLink, sectionDiv: loginDiv},
@@ -65,10 +65,13 @@ window.addEventListener('load', async (event) => {
     const sectionLinks = sections.map(section => section.sectionLink)
 
     // Get planets elements
+    const reportTable = document.getElementById('reportTable');
+
+    // Get planets elements
     const planetsTable = document.getElementById('planetsTable');
 
     // Get transaction elements
-    const transationsTable = document.getElementById('transationsTable');
+    const transactionsTable = document.getElementById('transactionsTable');
 
     // Get login elements
     const usernameSelect = document.getElementById('usernameSelect');
@@ -95,13 +98,17 @@ window.addEventListener('load', async (event) => {
 
     // Switches between different "pages" (sections) using link
     function switchSection(sectionLink) {
+        console.log(sectionLink)
         const index = sectionLinks.findIndex(link => link === sectionLink)
 
         for (let i = 0; i < sections.length; i+=1) {
             if (i === index) {
                 sections[i].sectionDiv.style.display = "block";
                 centralLogo.innerText = sections[i].sectionTitle
-                setCurrentPage(sections[i].sectionName)
+                setCurrentPage(sections[i].sectionName);
+                if (sections[i].sectionName == "report") {
+                    createSeasonReport()
+                }
             } else {
                 sections[i].sectionDiv.style.display = "none";
             }
@@ -280,7 +287,9 @@ window.addEventListener('load', async (event) => {
             updateType = "minor"
         }
 
-        userData = await updateAndStoreUserData(user, updateType);
+        //userData = await updateAndStoreUserData(user, updateType);
+        // USE IF WANT TO SWITCH OFF USER DATA COLLCECTION
+        userData = fetchUserDataFromStorage(user)
 
         // Currently put here as it needs to wait for user data
         fillPlanetsTable()
@@ -299,10 +308,105 @@ window.addEventListener('load', async (event) => {
         return (value !== null) ? value : false;
     }
 
+    // ----------------------------------
+    // YAMATO REPORT
+    // ----------------------------------
+
+    async function createSeasonReport() {
+        const seasonPlayers = await getSeasonPlayers();
+        console.log(seasonPlayers)
+        let seasonStartDate = seasonPlayers.start_date
+        fillSeasonTable(seasonPlayers.ranking, seasonStartDate)
+    }
+
+    async function fillSeasonTable(seasonPlayers, startDate) {
+        reportTable.innerHTML = "";
+
+        const columnHeaders = ["Rank", "User", "Build", "Destroy", "Total",]
+        const columnWidths = ["4%", "14%", "7%", "7%", "7%", ]
+
+        // Create row for table and label it with planet id
+        let headerRow = document.createElement("div")
+        headerRow.setAttribute('id', "headerRow");
+        headerRow.setAttribute('class', "table");
+        reportTable.appendChild(headerRow);
+
+        for (let i = 0; i < columnHeaders.length; i+=1) {
+            headerRow.appendChild(createTableDiv(columnHeaders[i], columnHeaders[i], columnWidths[i], false));
+        }
+
+        for (let i = 1; i <= 20; i+=1) {
+            headerRow.appendChild(createTableDiv(i, i, "2%", false));
+        }
+
+        for (const [index, player] of seasonPlayers.entries()) {
+            // Find yamato information based on missions
+
+
+            let userMissions = await getMissionsByType(player.user, "upgradeyamato", 1000)
+            let yamatoArray = Array(20).fill(0);
+            console.log(userMissions)
+            for (upgrade of userMissions) {
+                if (upgrade.date > startDate) {
+                    const yamatoUpgraded = Object.keys(upgrade.ships)[0]
+                    let yamatoNumber = -1;
+                    if (yamatoUpgraded == "yamato") {
+                        yamatoNumber = 0;
+                    } else {
+                        yamatoNumber = yamatoUpgraded.substring(6, yamatoUpgraded.length);
+                    }
+                    yamatoArray[yamatoNumber] += 1;
+                }
+            }
+
+            // Create row for table and label it with user id
+            let newRow = document.createElement("div")
+            newRow.setAttribute('id', player.user);
+            newRow.setAttribute('class', "table");
+            reportTable.appendChild(newRow);
+
+            newRow.appendChild(createTableDiv("rank", index+1, columnWidths[0], true))
+            newRow.appendChild(createTableDiv("user", player.user, columnWidths[1], true))
+            newRow.appendChild(createTableDiv("build", player.build_reward/100000000, columnWidths[2], true))
+            newRow.appendChild(createTableDiv("destroy", player.destroy_reward/100000000, columnWidths[3], true))
+            newRow.appendChild(createTableDiv("total", player.total_reward/100000000, columnWidths[4], true))
+
+            /*
+            for (let i = yamatoArray.length-1; i >= 0; i-=1) {
+                let reduction = yamatoArray[i];
+                for (let j = 0; j < i; j+=1) {
+                    yamatoArray[j] -= reduction;
+                }
+            }
+            */
+
+            for (let i = 0; i < yamatoArray.length; i+=1) {
+                newRow.appendChild(createTableDiv(i+1, yamatoArray[i], "2%", true))
+            }
+        }
+    }
+
+
 
     // ----------------------------------
     // PLANETS
     // ----------------------------------
+
+    function createTableDiv(divId, text, width, derived) {
+        let div = document.createElement("div");
+        div.setAttribute('id', divId);
+        if (derived === true) {
+            div.setAttribute('class', 'tableBoxDerived');
+        } else {
+            div.setAttribute('class', 'tableBoxUser');
+        }
+        div.style.width = width;
+        div.style.display = 'inline-block';
+
+        let divText = document.createTextNode(text);
+        div.appendChild(divText);
+        return div
+    }
 
     function fillPlanetsTable() {
         console.dir(userData)
@@ -318,26 +422,8 @@ window.addEventListener('load', async (event) => {
         planetsTable.appendChild(headerRow);
 
         for (let i = 0; i < columnHeaders.length; i+=1) {
-            headerRow.appendChild(createPlanetDiv(columnHeaders[i], columnHeaders[i], columnWidths[i], false));
+            headerRow.appendChild(createTableDiv(columnHeaders[i], columnHeaders[i], columnWidths[i], false));
         }
-
-        function createPlanetDiv(divId, text, width, derived) {
-            let div = document.createElement("div");
-            div.setAttribute('id', divId);
-            if (derived === true) {
-                div.setAttribute('class', 'tableBoxDerived');
-            } else {
-                div.setAttribute('class', 'tableBoxUser');
-            }
-            div.style.width = width;
-            div.style.display = 'inline-block';
-
-            let divText = document.createTextNode(text);
-            div.appendChild(divText);
-            return div
-        }
-
-
 
 
         for (const planet of userData.planets) {
@@ -351,35 +437,35 @@ window.addEventListener('load', async (event) => {
 
 
 
-            newRow.appendChild(createPlanetDiv("name", planet.name, columnWidths[0], true))
-            newRow.appendChild(createPlanetDiv("id", planet.id, columnWidths[1], true))
-            newRow.appendChild(createPlanetDiv("coords", "[" + planet.planetCoords + "]", columnWidths[2], true))
+            newRow.appendChild(createTableDiv("name", planet.name, columnWidths[0], true))
+            newRow.appendChild(createTableDiv("id", planet.id, columnWidths[1], true))
+            newRow.appendChild(createTableDiv("coords", "[" + planet.planetCoords + "]", columnWidths[2], true))
 
             if (planet.focus === planet.focusDerived) {
-                newRow.appendChild(createPlanetDiv("focus", planet.focus, columnWidths[3], true))
+                newRow.appendChild(createTableDiv("focus", planet.focus, columnWidths[3], true))
             } else {
-                newRow.appendChild(createPlanetDiv("focus", planet.focus, columnWidths[3], false))
+                newRow.appendChild(createTableDiv("focus", planet.focus, columnWidths[3], false))
             }
 
             if (planet.build === planet.buildDerived) {
-                newRow.appendChild(createPlanetDiv("build", planet.build, columnWidths[4], true))
+                newRow.appendChild(createTableDiv("build", planet.build, columnWidths[4], true))
             } else {
-                newRow.appendChild(createPlanetDiv("build", planet.build, columnWidths[4], false))
+                newRow.appendChild(createTableDiv("build", planet.build, columnWidths[4], false))
             }
 
             if (planet.shipbuild === planet.shipbuildDerived) {
-                newRow.appendChild(createPlanetDiv("shipbuild", planet.shipbuild, columnWidths[5], true))
+                newRow.appendChild(createTableDiv("shipbuild", planet.shipbuild, columnWidths[5], true))
             } else {
-                newRow.appendChild(createPlanetDiv("shipbuild", planet.shipbuild, columnWidths[5], false))
+                newRow.appendChild(createTableDiv("shipbuild", planet.shipbuild, columnWidths[5], false))
             }
 
             if (planet.explore === planet.exploreDerived) {
-                newRow.appendChild(createPlanetDiv("explore", planet.explore, columnWidths[6], true))
+                newRow.appendChild(createTableDiv("explore", planet.explore, columnWidths[6], true))
             } else {
-                newRow.appendChild(createPlanetDiv("explore", planet.explore, columnWidths[6], false))
+                newRow.appendChild(createTableDiv("explore", planet.explore, columnWidths[6], false))
             }
 
-            newRow.appendChild(createPlanetDiv("distance", planet.shortestDistance, columnWidths[7], true))
+            newRow.appendChild(createTableDiv("distance", planet.shortestDistance, columnWidths[7], true))
 
             /*
             // Add div for planet name
@@ -455,14 +541,6 @@ window.addEventListener('load', async (event) => {
 
 
         }
-
-
-
-
-
-
-
-
     });
 
 
@@ -563,6 +641,11 @@ async function runLoginMission(user, userData, mission, maxProcess, explorerRang
 
     if (mission == "check") {
         check(user)
+    } else if (mission == "resource yamatos") {
+        console.log("runLoginMission - resource yamatos")
+        let transactions = await resourceForYamatos(user, userData, outputNode);
+        transactionDelay = 500;
+        processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
     } else if (mission == "build explorers") {
         console.log("runLoginMission - build explorers")
         let transactions = await findExplorersToBuild(user, userData, outputNode)
@@ -610,6 +693,8 @@ async function runInfoMission(user, userData, mission, explorerRange, xCoordinat
 
     if (mission == "targets") {
         targets(user, outputNode)
+    } else if (mission == "resource yamatos") {
+        let transportTransactions = await resourceForYamatos(user, userData, outputNode)
     } else if (mission == "snipes") {
         snipes(user,outputNode)
     } else if (mission == "buildings") {
@@ -1227,10 +1312,6 @@ async function findExplorersToBuild(user, userData, outputNode) {
     let shipsTransactions = [];
     let i=0;
 
-
-
-
-
     for (const planet of planetsToBuildExplorers) {
         planetData[i] = await getPlanetResources(planet.id)
         planetResources[i] = await calculateCurrentResources(planetData[i])
@@ -1366,6 +1447,199 @@ async function findShipsToBuild(user, userData, outputNode) {
 
     return shipsTransactions;
 }
+
+
+async function resourceForYamatos(user, userData, outputNode) {
+    // In user data mark yamato planets
+    // If resource planet
+    // Find nearest yamatos planet (yamato mission or yamato in fleet)
+    // Check ships available in fleet
+    // Filter ships you want to use (level 3, 4)
+    // Count resources available to transport (leave 50 uranium to pay for travel)
+    // Only send if more than 2400
+    // Send
+
+    let transportTransactions = [];
+
+    let shipPriority = {
+        transportship2: 99,
+        destroyer: 89,
+        destroyer2: 89,
+        frigate: 88,
+        frigate2: 88,
+        corvette: 79,
+        corvette2: 79,
+        cruiser: 69,
+        cruiser2: 69,
+        battlecruiser: 68,
+        battlecruiser2: 68,
+        //dreadnought: 59,
+        //dreadnought2: 59,
+        //carrier: 58,
+        //carrier2: 58,
+    }
+
+    outputNode.innerHTML += "<br>";
+
+    let yamatoPlanets = [];
+
+    // Find yamato planets
+    for (const planet of userData.planets) {
+
+        let reg = new RegExp("yamato*");
+        let yamatoFleetIndex = planet.planetFleetInfo.findIndex(fleet => reg.test(fleet.type));
+        let yamatoInFleet = false;
+        if (yamatoFleetIndex != -1) {
+            yamatoInFleet = true
+            outputNode.innerHTML += planet.name + " " + planet.id + " : " + "yamato available" + "<br>";
+            console.log(planet.planetFleetInfo[yamatoFleetIndex])
+        }
+
+        let planetMissionsData = await getMissions(user, planet.id, 1)
+        let yamatoMissions = planetMissionsData.filter(mission => mission.type == "upgradeyamato");
+        if (yamatoMissions.length > 0) {
+            yamatoInFleet = true
+            outputNode.innerHTML += planet.name + " " + planet.id + " : " + "yamato on upgrade" + "<br>";
+            console.log(yamatoMissions)
+        }
+
+        if (yamatoInFleet == true) {
+            yamatoPlanets.push(planet)
+        }
+
+
+    }
+
+    outputNode.innerHTML += "<br>";
+    outputNode.innerHTML += "<br>";
+
+    for (const planet of userData.planets) {
+        //let planetCoords = planet.planetCoords;
+
+        if (planet.focus == "resource" || planet.focus == "develop") {
+            let distanceToNearestYamatoPlanet = 1000000;
+            let nearestYamatoPlanet = planet;
+
+
+            for (const yamatoPlanet of yamatoPlanets) {
+
+                let nextDistance = distance(planet.planetCoords, yamatoPlanet.planetCoords);
+                if (nextDistance < distanceToNearestYamatoPlanet) {
+                    distanceToNearestYamatoPlanet = nextDistance;
+                    nearestYamatoPlanet = yamatoPlanet;
+                }
+            }
+
+            console.log(nearestYamatoPlanet)
+
+            if (distanceToNearestYamatoPlanet > 0 && distanceToNearestYamatoPlanet < (24 * 4)) {
+                let planetData = await getPlanetResources(planet.id);
+                let planetResources = await calculateCurrentResources(planetData);
+                resourceTypes = ["coal", "ore", "copper", "uranium"]
+
+                let totalResources = 0;
+                for (const resourceType of resourceTypes) {
+                    totalResources += planetResources[resourceType];
+                }
+
+                if (totalResources > 3600) {
+
+
+                    let transportShips = planet.planetFleetInfo;
+                    transportShips = transportShips.filter(ship => shipPriority[ship.type] > 0);
+                    transportShips = transportShips.sort((a, b) => shipPriority[b.type] - shipPriority[a.type]);
+
+                    console.dir(transportShips)
+
+                    let remainingResources = totalResources;
+                    let resourcesToTransport = 0;
+                    let shipList = {};
+                    for (const transportShipClass of transportShips) {
+                        if (remainingResources > 0) {
+                            if (transportShipClass.quantity * transportShipClass.capacity > remainingResources) {
+                                let partialNumber = Math.ceil(remainingResources / transportShipClass.capacity);
+                                shipList[transportShipClass.type] = partialNumber;
+                                resourcesToTransport += remainingResources;
+                                remainingResources = 0;
+                            } else {
+                                shipList[transportShipClass.type] = transportShipClass.quantity;
+                                remainingResources -= transportShipClass.quantity * transportShipClass.capacity;
+                                resourcesToTransport += transportShipClass.quantity * transportShipClass.capacity;
+                            }
+                        }
+                    }
+                    console.dir(shipList)
+                    console.log(resourcesToTransport)
+
+                    if (resourcesToTransport > 3600) {
+                        let resourceTransportRatio = resourcesToTransport / totalResources;
+                        let resourcesByType = {};
+                        for (const resourceType of resourceTypes) {
+                            if (resourceTransportRatio > 0.99 & resourceType == "uranium") {
+                                resourcesByType[resourceType] = Math.floor(planetResources[resourceType] * resourceTransportRatio - 20);
+                            } else {
+                                resourcesByType[resourceType] = Math.floor(planetResources[resourceType] * resourceTransportRatio);
+                            }
+
+                        }
+
+                        let transaction = {};
+
+
+                        // Include name and current skill level
+                        transaction.type = "transport";
+                        transaction.originPlanetId = planet.id;
+                        transaction.x = nearestYamatoPlanet.planetCoords[0];
+                        transaction.y = nearestYamatoPlanet.planetCoords[1];
+                        transaction.shipList = shipList;
+                        transaction.coal = resourcesByType.coal;
+                        transaction.ore = resourcesByType.ore;
+                        transaction.copper = resourcesByType.copper;
+                        transaction.uranium = resourcesByType.uranium;
+
+                        outputNode.innerHTML += "<br>";
+                        outputNode.innerHTML += planet.name + " (" + planet.id + ") to: " + nearestYamatoPlanet.name + " [" + transaction.x + "/" + transaction.y + "] distance: " + distanceToNearestYamatoPlanet.toFixed(2) + "<br>";
+                        outputNode.innerHTML += "resources transported: coal: " + transaction.coal + " ore: " + transaction.ore + " copper: " + transaction.copper + " uranium: " + transaction.uranium + "<br>";
+                        outputNode.innerHTML += "total transported: " + (transaction.coal + transaction.ore + transaction.copper + transaction.uranium) + " out of: " +  totalResources.toFixed(0) + "<br>";
+                        outputNode.innerHTML += JSON.stringify(transaction.shipList) + "<br>";
+
+                        transportTransactions.push(transaction)
+                    // capacity < 3600
+                    } else {
+                        outputNode.innerHTML += "<br>";
+                        outputNode.innerHTML += planet.name + " (" + planet.id + ") to: " + nearestYamatoPlanet.name + " - NEEDS SHIPS" + "<br>";
+                        outputNode.innerHTML += "Total resources: " + totalResources.toFixed(0) + "<br>";
+                        outputNode.innerHTML += "Carrying capacity: " + resourcesToTransport.toFixed(0) + "<br>";
+                        outputNode.innerHTML += JSON.stringify(shipList) + "<br>";
+
+                    }
+
+
+                // total resources < 3600
+                } else {
+                  outputNode.innerHTML += "<br>";
+                  outputNode.innerHTML += planet.name + " (" + planet.id + "): Insufficient resources" + "<br>";
+                  outputNode.innerHTML += "Total resources: " + totalResources.toFixed(0) + " less than 3600." + "<br>";
+
+                }
+            // distance
+          } else if (distanceToNearestYamatoPlanet == 0) {
+              outputNode.innerHTML += "<br>";
+              outputNode.innerHTML += planet.name + " (" + planet.id + "): Yamato planet" + "<br>";
+          } else if (distanceToNearestYamatoPlanet > (24 * 4)) {
+              outputNode.innerHTML += "<br>";
+              outputNode.innerHTML += planet.name + " (" + planet.id + "): Distance too far" + "<br>";
+          }
+
+        }
+
+    }
+
+    return transportTransactions;
+}
+
+
+
 
 
 async function findExplorerTwoTransactions(user, userData, explorerRange, xCoordinate, yCoordinate, outputNode) {

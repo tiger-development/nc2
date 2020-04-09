@@ -1,3 +1,9 @@
+async function getSeasonPlayers() {
+    let response = await fetch("https://api.nextcolony.io/seasonranking");
+    let data = await response.json();
+    return data
+}
+
 async function getPlanetsOfUser(user) {
     let response = await fetch("https://api.nextcolony.io/loadplanets?user=" + user + "&from=0&to=10000&sort=date");
     let data = await response.json();
@@ -51,6 +57,13 @@ async function getLimitedUserMissions(user, limit) {
     let data = await response.json();
     return data
 }
+
+async function getMissionsByType(user, type, limit) {
+    let response = await fetch("https://api.nextcolony.io/missions?user=" + user + "&mission_type=" + type + "&limit=" + limit);
+    let data = await response.json();
+    return data
+}
+
 
 async function getPlanetMissionInfo(user, planetId) {
     let response = await fetch("https://api.nextcolony.io/missioninfo?user=" + user + "&planet=" + planetId);

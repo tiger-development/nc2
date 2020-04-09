@@ -170,6 +170,7 @@ async function updateAndStoreUserData(user, updateType) {
         if (explorerTwoFleetIndex != -1) {
             explorerTwoAvailable = planetFleetInfo[explorerTwoFleetIndex].quantity;
         }
+
         if (i==0) {
             console.log("planetFleetInfo - operation took: ", (Date.now() - subOperationStartTime)/1000)
         }
@@ -371,6 +372,17 @@ async function updateAndStoreUserData(user, updateType) {
     // Return user data for user
     return userDataEntry;
 }
+
+
+function checkForYamatoMission() {
+
+}
+
+function checkNumberOfYamatos() {
+
+}
+
+
 
 function checkAvailableExploration(planetCoords, galaxyData) {
     let xmin = galaxyData.area.xmin;

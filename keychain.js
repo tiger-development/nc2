@@ -79,6 +79,39 @@ function exploreSpace(user, planetId, x, y, shipName) {
     keychainCustomJson(user, 'nextcolony', 'Posting', finalJson, 'displayName')
 }
 
+// shipList = { "transportship": 2, "explorership": 1 }
+function transport(
+    user,
+    originPlanetId,
+    x,
+    y,
+    shipList,
+    coal,
+    ore,
+    copper,
+    uranium
+  ) {
+    var scJson = {};
+    var scCommand = {};
+    scJson["username"] = user;
+    scJson["type"] = "transport";
+    scCommand["tr_var1"] = shipList;
+    scCommand["tr_var2"] = originPlanetId;
+    scCommand["tr_var3"] = x;
+    scCommand["tr_var4"] = y;
+    scCommand["tr_var5"] = coal;
+    scCommand["tr_var6"] = ore;
+    scCommand["tr_var7"] = copper;
+    scCommand["tr_var8"] = uranium;
+    scJson["command"] = scCommand;
+    var finalJson = JSON.stringify(scJson);
+
+    keychainCustomJson(user, 'nextcolony', 'Posting', finalJson, 'displayName')
+  }
+
+
+
+
 function processKeychainTransactions(user, transactions, maxProcess, waitTime) {
 
     let transactionsToProcess = Math.min(maxProcess, transactions.length)
@@ -104,6 +137,8 @@ function processKeychainTransactions(user, transactions, maxProcess, waitTime) {
             ask(user, transaction.category, transaction.itemUID, transaction.price)
         } else if (transaction.type == "cancelAsk") {
             cancel_ask(user, transaction.askId)
+        } else if (transaction.type == "transport") {
+            transport(user, transaction.originPlanetId, transaction.x, transaction.y, transaction.shipList, transaction.coal, transaction.ore, transaction.copper, transaction.uranium);
         }
 
 
