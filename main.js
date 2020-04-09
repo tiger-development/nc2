@@ -287,9 +287,9 @@ window.addEventListener('load', async (event) => {
             updateType = "minor"
         }
 
-        //userData = await updateAndStoreUserData(user, updateType);
+        userData = await updateAndStoreUserData(user, updateType);
         // USE IF WANT TO SWITCH OFF USER DATA COLLCECTION
-        userData = fetchUserDataFromStorage(user)
+        //userData = fetchUserDataFromStorage(user)
 
         // Currently put here as it needs to wait for user data
         fillPlanetsTable()
