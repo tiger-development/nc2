@@ -1568,7 +1568,7 @@ async function resourceForYamatos(user, userData, outputNode) {
                         let resourcesByType = {};
                         for (const resourceType of resourceTypes) {
                             if (resourceTransportRatio > 0.98 & resourceType == "uranium") {
-                                resourcesByType[resourceType] = Math.floor(planetResources[resourceType] * resourceTransportRatio - distance);
+                                resourcesByType[resourceType] = Math.floor(planetResources[resourceType] * resourceTransportRatio - distanceToNearestYamatoPlanet);
                             } else {
                                 resourcesByType[resourceType] = Math.floor(planetResources[resourceType] * resourceTransportRatio);
                             }
