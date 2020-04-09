@@ -1492,7 +1492,6 @@ async function resourceForYamatos(user, userData, outputNode) {
         if (yamatoFleetIndex != -1) {
             yamatoInFleet = true
             outputNode.innerHTML += planet.name + " " + planet.id + " : " + "yamato available" + "<br>";
-            console.log(planet.planetFleetInfo[yamatoFleetIndex])
         }
 
         let planetMissionsData = await getMissions(user, planet.id, 1)
@@ -1500,7 +1499,6 @@ async function resourceForYamatos(user, userData, outputNode) {
         if (yamatoMissions.length > 0) {
             yamatoInFleet = true
             outputNode.innerHTML += planet.name + " " + planet.id + " : " + "yamato on upgrade" + "<br>";
-            console.log(yamatoMissions)
         }
 
         if (yamatoInFleet == true) {
@@ -1530,8 +1528,6 @@ async function resourceForYamatos(user, userData, outputNode) {
                 }
             }
 
-            console.log(nearestYamatoPlanet)
-
             if (distanceToNearestYamatoPlanet > 0 && distanceToNearestYamatoPlanet < (24 * 4)) {
                 let planetData = await getPlanetResources(planet.id);
                 let planetResources = await calculateCurrentResources(planetData);
@@ -1542,14 +1538,12 @@ async function resourceForYamatos(user, userData, outputNode) {
                     totalResources += planetResources[resourceType];
                 }
 
-                if (totalResources > 3600) {
+                if (totalResources > 2400) {
 
 
                     let transportShips = planet.planetFleetInfo;
                     transportShips = transportShips.filter(ship => shipPriority[ship.type] > 0);
                     transportShips = transportShips.sort((a, b) => shipPriority[b.type] - shipPriority[a.type]);
-
-                    console.dir(transportShips)
 
                     let remainingResources = totalResources;
                     let resourcesToTransport = 0;
@@ -1568,10 +1562,8 @@ async function resourceForYamatos(user, userData, outputNode) {
                             }
                         }
                     }
-                    console.dir(shipList)
-                    console.log(resourcesToTransport)
 
-                    if (resourcesToTransport > 3600) {
+                    if (resourcesToTransport > 2400) {
                         let resourceTransportRatio = resourcesToTransport / totalResources;
                         let resourcesByType = {};
                         for (const resourceType of resourceTypes) {
