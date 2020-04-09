@@ -1567,8 +1567,8 @@ async function resourceForYamatos(user, userData, outputNode) {
                         let resourceTransportRatio = resourcesToTransport / totalResources;
                         let resourcesByType = {};
                         for (const resourceType of resourceTypes) {
-                            if (resourceTransportRatio > 0.99 & resourceType == "uranium") {
-                                resourcesByType[resourceType] = Math.floor(planetResources[resourceType] * resourceTransportRatio - 20);
+                            if (resourceTransportRatio > 0.98 & resourceType == "uranium") {
+                                resourcesByType[resourceType] = Math.floor(planetResources[resourceType] * resourceTransportRatio - distance);
                             } else {
                                 resourcesByType[resourceType] = Math.floor(planetResources[resourceType] * resourceTransportRatio);
                             }
@@ -1611,7 +1611,7 @@ async function resourceForYamatos(user, userData, outputNode) {
                 } else {
                   outputNode.innerHTML += "<br>";
                   outputNode.innerHTML += planet.name + " (" + planet.id + "): Insufficient resources" + "<br>";
-                  outputNode.innerHTML += "Total resources: " + totalResources.toFixed(0) + " less than 3600." + "<br>";
+                  outputNode.innerHTML += "Total resources: " + totalResources.toFixed(0) + " - Less than 2400." + "<br>";
 
                 }
             // distance
@@ -1915,12 +1915,12 @@ async function findExplorationTransactions(user, userData, explorerRange, output
         outputNode.innerHTML += planet.id + " " + planet.name + ":<br>";
         outputNode.innerHTML += "available missions: " + availableMissions + " available explorers: " + explorersAvailable + " shortest distance: " + planet.shortestDistance + "<br>";
 
-        console.log(planet.id, planet.name)
-        console.log(planet.shortestDistance, explorerRange, planet.shortestDistance < explorerRange)
+        //console.log(planet.id, planet.name)
+        //console.log(planet.shortestDistance, explorerRange, planet.shortestDistance < explorerRange)
         if (planet.shortestDistance < explorerRange) {
             galaxyData[i] = await getGalaxy(planetCoords[0], planetCoords[1], explorerRange*2, explorerRange*2);
 
-            console.dir(galaxyData[i])
+            //console.dir(galaxyData[i])
             space[i] = [];
             let xmin = galaxyData[i].area.xmin;
             let xmax = galaxyData[i].area.xmax;
