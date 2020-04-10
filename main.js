@@ -98,7 +98,6 @@ window.addEventListener('load', async (event) => {
 
     // Switches between different "pages" (sections) using link
     function switchSection(sectionLink) {
-        console.log(sectionLink)
         const index = sectionLinks.findIndex(link => link === sectionLink)
 
         for (let i = 0; i < sections.length; i+=1) {
@@ -322,13 +321,13 @@ window.addEventListener('load', async (event) => {
     async function fillSeasonTable(seasonPlayers, startDate) {
         reportTable.innerHTML = "";
 
-        const columnHeaders = ["Rank", "User", "Build", "Destroy", "Total",]
-        const columnWidths = ["4%", "14%", "7%", "7%", "7%", ]
+        const columnHeaders = ["Rank", "User", "Build", "Destroy", "Total", "Planets", "Stardust"]
+        const columnWidths = ["3%", "12%", "5%", "5%", "5%", "5%", "5%"]
 
         // Create row for table and label it with planet id
         let headerRow = document.createElement("div")
         headerRow.setAttribute('id', "headerRow");
-        headerRow.setAttribute('class', "table");
+        headerRow.setAttribute('class', "seasontable");
         reportTable.appendChild(headerRow);
 
         for (let i = 0; i < columnHeaders.length; i+=1) {
@@ -359,10 +358,33 @@ window.addEventListener('load', async (event) => {
                 }
             }
 
+            planetValuation =
+                [
+                    [0,0,0,0,0,0], //0 - does not exist
+                    [0, 5000, 9000, 10000, 12000, 15000], //1 - common - atmo, coal, ore, copper, uranium
+                    [0, 10000, 18000, 20000, 25000, 30000], //2 - uncommon
+                    [0, 30000, 50000, 60000, 70000 ,90000], //3 - rare
+                    [0, 0, 0, 0, 0, 9000000], //4 - legendady
+                ]
+
+            let planetsValue = 0;
+            let userPlanets = await getPlanetsOfUser(player.user);
+            console.dir(userPlanets)
+            //for (const [i, planet] of dataPlanets.planets.entries()) {
+            for (const planet of userPlanets.planets) {
+                //console.log(planet.bonus, planet.planet_type)
+                //console.log(planetValuation[planet.bonus][planet.planet_type])
+                planetsValue += planetValuation[planet.bonus][planet.planet_type]
+            }
+
+            let stardust = 0
+            let userWallet = await getWallet(player.user);
+            stardust = userWallet.stardust;
+
             // Create row for table and label it with user id
             let newRow = document.createElement("div")
             newRow.setAttribute('id', player.user);
-            newRow.setAttribute('class', "table");
+            newRow.setAttribute('class', "seasontable");
             reportTable.appendChild(newRow);
 
             newRow.appendChild(createTableDiv("rank", index+1, columnWidths[0], true))
@@ -370,6 +392,8 @@ window.addEventListener('load', async (event) => {
             newRow.appendChild(createTableDiv("build", player.build_reward/100000000, columnWidths[2], true))
             newRow.appendChild(createTableDiv("destroy", player.destroy_reward/100000000, columnWidths[3], true))
             newRow.appendChild(createTableDiv("total", player.total_reward/100000000, columnWidths[4], true))
+            newRow.appendChild(createTableDiv("value", (planetsValue/1000000).toFixed(2) + "m", columnWidths[5], true))
+            newRow.appendChild(createTableDiv("stardust", (stardust/(100000000 * 1000000)).toFixed(2) + "m", columnWidths[6], true))
 
             /*
             for (let i = yamatoArray.length-1; i >= 0; i-=1) {
@@ -383,6 +407,7 @@ window.addEventListener('load', async (event) => {
             for (let i = 0; i < yamatoArray.length; i+=1) {
                 newRow.appendChild(createTableDiv(i+1, yamatoArray[i], "2%", true))
             }
+
         }
     }
 
@@ -643,7 +668,12 @@ async function runLoginMission(user, userData, mission, maxProcess, explorerRang
         check(user)
     } else if (mission == "resource yamatos") {
         console.log("runLoginMission - resource yamatos")
-        let transactions = await resourceForYamatos(user, userData, outputNode);
+        let transactions = await sendToYamatos(user, userData, outputNode, "transport");
+        transactionDelay = 500;
+        processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
+
+    } else if (mission == "deploy to yamatos") {
+        let transactions = await sendToYamatos(user, userData, outputNode, "deploy");
         transactionDelay = 500;
         processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
     } else if (mission == "build explorers") {
@@ -694,7 +724,9 @@ async function runInfoMission(user, userData, mission, explorerRange, xCoordinat
     if (mission == "targets") {
         targets(user, outputNode)
     } else if (mission == "resource yamatos") {
-        let transportTransactions = await resourceForYamatos(user, userData, outputNode)
+        let transportTransactions = await sendToYamatos(user, userData, outputNode, "transport")
+    } else if (mission == "deploy to yamatos") {
+        let transportTransactions = await sendToYamatos(user, userData, outputNode, "deploy")
     } else if (mission == "snipes") {
         snipes(user,outputNode)
     } else if (mission == "buildings") {
@@ -1449,7 +1481,54 @@ async function findShipsToBuild(user, userData, outputNode) {
 }
 
 
-async function resourceForYamatos(user, userData, outputNode) {
+async function sendToYamatos(user, userData, outputNode, transactionType) {
+    let shipPriority = {}
+
+    if (transactionType == "transport") {
+        shipPriority = {
+            transportship2: 99,
+            destroyer: 89,
+            destroyer2: 89,
+            frigate: 88,
+            frigate2: 88,
+            corvette: 79,
+            corvette2: 79,
+            cruiser: 69,
+            cruiser2: 69,
+            battlecruiser: 68,
+            battlecruiser2: 68,
+            //dreadnought: 59,
+            //dreadnought2: 59,
+            //carrier: 58,
+            //carrier2: 58,
+        }
+    // deploy
+    } else {
+        shipPriority = {
+            dreadnought: 99,
+            dreadnought2: 99,
+            carrier: 98,
+            carrier2: 98,
+            battlecruiser: 89,
+            battlecruiser2: 89,
+            cruiser: 88,
+            cruiser2: 88,
+            destroyer: 79,
+            destroyer2: 79,
+            frigate: 78,
+            frigate2: 78,
+            corvette: 69,
+            corvette2: 69
+        }
+    }
+
+    let transactions = await resourceForYamatos(user, userData, outputNode, transactionType, shipPriority);
+    return transactions;
+}
+
+
+
+async function resourceForYamatos(user, userData, outputNode, transactionType, shipPriority) {
     // In user data mark yamato planets
     // If resource planet
     // Find nearest yamatos planet (yamato mission or yamato in fleet)
@@ -1459,25 +1538,9 @@ async function resourceForYamatos(user, userData, outputNode) {
     // Only send if more than 2400
     // Send
 
-    let transportTransactions = [];
+    let transactions = [];
 
-    let shipPriority = {
-        transportship2: 99,
-        destroyer: 89,
-        destroyer2: 89,
-        frigate: 88,
-        frigate2: 88,
-        corvette: 79,
-        corvette2: 79,
-        cruiser: 69,
-        cruiser2: 69,
-        battlecruiser: 68,
-        battlecruiser2: 68,
-        //dreadnought: 59,
-        //dreadnought2: 59,
-        //carrier: 58,
-        //carrier2: 58,
-    }
+
 
     outputNode.innerHTML += "<br>";
 
@@ -1579,7 +1642,7 @@ async function resourceForYamatos(user, userData, outputNode) {
 
 
                         // Include name and current skill level
-                        transaction.type = "transport";
+                        transaction.type = transactionType;
                         transaction.originPlanetId = planet.id;
                         transaction.x = nearestYamatoPlanet.planetCoords[0];
                         transaction.y = nearestYamatoPlanet.planetCoords[1];
@@ -1595,7 +1658,7 @@ async function resourceForYamatos(user, userData, outputNode) {
                         outputNode.innerHTML += "total transported: " + (transaction.coal + transaction.ore + transaction.copper + transaction.uranium) + " out of: " +  totalResources.toFixed(0) + "<br>";
                         outputNode.innerHTML += JSON.stringify(transaction.shipList) + "<br>";
 
-                        transportTransactions.push(transaction)
+                        transactions.push(transaction)
                     // capacity < 3600
                     } else {
                         outputNode.innerHTML += "<br>";
@@ -1627,7 +1690,7 @@ async function resourceForYamatos(user, userData, outputNode) {
 
     }
 
-    return transportTransactions;
+    return transactions;
 }
 
 
@@ -2010,19 +2073,19 @@ async function findExplorationTransactions(user, userData, explorerRange, output
             }
             //console.log(space[i])
             proposedExplorations[i] = space[i].filter(space => space.explored == false);
-            console.log(proposedExplorations[i])
+            //console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.priorTransaction == false);
-            console.log(proposedExplorations[i])
+            //console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.underSearch == false);
-            console.log(proposedExplorations[i])
+            //console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.sniped != "lost");
-            console.log(proposedExplorations[i])
+            //console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.returnHour > reopenHour);
-            console.log(proposedExplorations[i])
+            //console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.planet == false);
-            console.log(proposedExplorations[i])
+            //console.log(proposedExplorations[i])
             proposedExplorations[i].sort((a, b) => a.distance - b.distance);
-            console.log(proposedExplorations[i])
+            //console.log(proposedExplorations[i])
             snipeOpportunities = proposedExplorations[i].filter(space => space.sniped == "opportunity");
             snipeOpportunities = snipeOpportunities.slice(0, availableExplorerMissions);
 
@@ -2031,7 +2094,7 @@ async function findExplorationTransactions(user, userData, explorerRange, output
             //proposedExplorations[i] = proposedExplorations[i].slice(0, availableExplorerMissions);
             //console.log(proposedExplorations[i])
             proposedExplorations[i] = snipeOpportunities.concat(nonSnipeExplorations);
-            console.log(proposedExplorations[i])
+            //console.log(proposedExplorations[i])
             /*
             let reportingExplorations = space[i].filter(space => space.explored == false);
             reportingExplorations = reportingExplorations.filter(space => space.priorTransaction == false);
@@ -2062,7 +2125,7 @@ async function findExplorationTransactions(user, userData, explorerRange, output
     }
 
     let finalExplorationTransactions = explorationTransactions.slice(0, userData.userAvailableMissions);
-    console.dir(finalExplorationTransactions);
+    //console.dir(finalExplorationTransactions);
     return finalExplorationTransactions;
 
 }
@@ -2114,7 +2177,7 @@ async function findMarketTrades(user, userData, outputNode) {
     let i = 0;
 
     for (const planet of salePlanets) {
-        console.log(user, planet.id)
+        //console.log(user, planet.id)
         // Fetch ships on planet
         planetShips[i] = await getPlanetShips(user, planet.id);
         // Filter to ships on "shipMarket" sale list
@@ -2126,7 +2189,7 @@ async function findMarketTrades(user, userData, outputNode) {
         // Crop ships to useful info only, including ship version tyep
         planetShipsForMarket = planetShipsForMarket.map(ship => ({type: ship.type, id: ship.id, planet: planet.id, version: shipMarket[findIndexInShipMarket(ship.type)].version}))
         //usefulShips = usefulShips.map(ship => ({...ship, priority: shipPriority[ship.type]}))
-        console.dir(planetShipsForMarket)
+        //console.dir(planetShipsForMarket)
 
         if (userPlanetOrderForShipSales.version0.includes(planet.id)) {
             let planetVersionZeroShips = planetShipsForMarket.filter(ship => ship.version == 0);

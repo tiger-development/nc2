@@ -106,10 +106,29 @@ function transport(
     scJson["command"] = scCommand;
     var finalJson = JSON.stringify(scJson);
 
-    keychainCustomJson(user, 'nextcolony', 'Posting', finalJson, 'displayName')
-  }
+    keychainCustomJson(user, 'nextcolony', 'Posting', finalJson, 'displayName');
+}
 
 
+// shipList = { "transportship": 2, "explorership": 1 }
+function deploy(user, originPlanetId, x, y, shipList, coal, ore, copper, uranium) {
+    var scJson = {};
+    var scCommand = {};
+    scJson["username"] = user;
+    scJson["type"] = "deploy";
+    scCommand["tr_var1"] = shipList;
+    scCommand["tr_var2"] = x;
+    scCommand["tr_var3"] = y;
+    scCommand["tr_var4"] = coal;
+    scCommand["tr_var5"] = ore;
+    scCommand["tr_var6"] = copper;
+    scCommand["tr_var7"] = uranium;
+    scCommand["tr_var8"] = originPlanetId;
+    scJson["command"] = scCommand;
+    var finalJson = JSON.stringify(scJson);
+
+    keychainCustomJson(user, 'nextcolony', 'Posting', finalJson, 'displayName');
+}
 
 
 function processKeychainTransactions(user, transactions, maxProcess, waitTime) {
@@ -139,8 +158,9 @@ function processKeychainTransactions(user, transactions, maxProcess, waitTime) {
             cancel_ask(user, transaction.askId)
         } else if (transaction.type == "transport") {
             transport(user, transaction.originPlanetId, transaction.x, transaction.y, transaction.shipList, transaction.coal, transaction.ore, transaction.copper, transaction.uranium);
+        } else if (transaction.type == "deploy") {
+            deploy(user, transaction.originPlanetId, transaction.x, transaction.y, transaction.shipList, transaction.coal, transaction.ore, transaction.copper, transaction.uranium);
         }
-
 
         if (transactionsToProcess > 0) {
             setTimeout(processKeychainTransactionWithDelay, waitTime);

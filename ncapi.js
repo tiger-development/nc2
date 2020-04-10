@@ -108,3 +108,9 @@ async function getMarketForShipAndUser(user, shipType, active, sold) {
     let data = await response.json();
     return data
 }
+
+async function getWallet(user) {
+    let response = await fetch("https://api.nextcolony.io/wallet?user=" + user);
+    let data = await response.json();
+    return data
+}
