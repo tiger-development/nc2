@@ -210,7 +210,7 @@ async function updateAndStoreUserData(user, updateType) {
         } else {
             userDataEntry.planets[userDataPlanetsIndex].name = planet.name; // update in case of name change
             userDataEntry.planets[userDataPlanetsIndex]["planetMissionInfo"] = planetMissionInfo;
-            //console.log(planet.name, planet.id)
+            console.log(planet.name, planet.id)
             //console.dir(planetMissionInfo)
             userDataEntry.planets[userDataPlanetsIndex]["planetFleetInfo"] = planetFleetInfo;
             userDataEntry.planets[userDataPlanetsIndex]["explorerOneAvailable"] = explorerOneAvailable;
