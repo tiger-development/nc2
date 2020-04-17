@@ -313,15 +313,19 @@ window.addEventListener('load', async (event) => {
 
     async function createSeasonReport() {
         const seasonPlayers = await getSeasonPlayers();
-        console.log(seasonPlayers)
+        //console.log(seasonPlayers)
         let seasonStartDate = seasonPlayers.start_date
         fillSeasonTable(seasonPlayers.ranking, seasonStartDate)
     }
 
     async function fillSeasonTable(seasonPlayers, startDate) {
+        // OBTAIN STARDUST AND ALT TRANSFERS
+        let allPlanets = await getAllPlanets()
+        let stardustFactor = 100000000
+
         reportTable.innerHTML = "";
 
-        const columnHeaders = ["Rank", "User", "Build", "Destroy", "Total", "Planets", "Stardust"]
+        const columnHeaders = ["Rank", "User", "Planets", "Stardust", "Build", "Destroy", "Total", ]
         const columnWidths = ["3%", "12%", "5%", "5%", "5%", "5%", "5%"]
 
         // Create row for table and label it with planet id
@@ -331,21 +335,25 @@ window.addEventListener('load', async (event) => {
         reportTable.appendChild(headerRow);
 
         for (let i = 0; i < columnHeaders.length; i+=1) {
-            headerRow.appendChild(createTableDiv(columnHeaders[i], columnHeaders[i], columnWidths[i], false));
+            headerRow.appendChild(createTableDiv(columnHeaders[i], columnHeaders[i], columnWidths[i], false, "blue"));
         }
 
         for (let i = 1; i <= 20; i+=1) {
-            headerRow.appendChild(createTableDiv(i, i, "2%", false));
+            headerRow.appendChild(createTableDiv(i, i, "2%", false, "blue"));
         }
+
+        let altsToExclude = ["nextcolony.exch", "nextcolony", "null", "oliverschmid"];
+
 
         for (const [index, player] of seasonPlayers.entries()) {
             // Find yamato information based on missions
+            console.log("-----" + player.user + "-----")
 
 
-            let userMissions = await getMissionsByType(player.user, "upgradeyamato", 1000)
+            let yamatoMissions = await getMissionsByType(player.user, "upgradeyamato", 1000)
             let yamatoArray = Array(20).fill(0);
-            console.log(userMissions)
-            for (upgrade of userMissions) {
+            //console.log(yamatoMissions)
+            for (upgrade of yamatoMissions) {
                 if (upgrade.date > startDate) {
                     const yamatoUpgraded = Object.keys(upgrade.ships)[0]
                     let yamatoNumber = -1;
@@ -358,28 +366,112 @@ window.addEventListener('load', async (event) => {
                 }
             }
 
-            planetValuation =
-                [
-                    [0,0,0,0,0,0], //0 - does not exist
-                    [0, 5000, 9000, 10000, 12000, 15000], //1 - common - atmo, coal, ore, copper, uranium
-                    [0, 10000, 18000, 20000, 25000, 30000], //2 - uncommon
-                    [0, 30000, 50000, 60000, 70000 ,90000], //3 - rare
-                    [0, 0, 0, 0, 0, 9000000], //4 - legendady
-                ]
 
-            let planetsValue = 0;
-            let userPlanets = await getPlanetsOfUser(player.user);
-            console.dir(userPlanets)
-            //for (const [i, planet] of dataPlanets.planets.entries()) {
-            for (const planet of userPlanets.planets) {
-                //console.log(planet.bonus, planet.planet_type)
-                //console.log(planetValuation[planet.bonus][planet.planet_type])
-                planetsValue += planetValuation[planet.bonus][planet.planet_type]
-            }
+
 
             let stardust = 0
-            let userWallet = await getWallet(player.user);
+            let userWallet = await getWallet(player.user, 10000);
             stardust = userWallet.stardust;
+
+            let transfers = userWallet.transactions.filter(transaction => transaction.tr_type == "transfer")
+            //console.dir(transfers)
+
+
+
+            var aggregatedTransfers = transfers.reduce(function (acc, curVal) {
+                var fromUser = curVal.from_user;
+                var toUser = curVal.to_user;
+                var altName = "";
+                if (fromUser == player.user) {
+                    altName = toUser;
+                } else if (toUser == player.user) {
+                    altName = fromUser;
+                } else {
+                    console.log("error")
+                }
+
+
+                let index = acc.findIndex(alt => alt.name == altName);
+                if (index >= 0) {
+                    acc[index].transferValue += curVal.amount / stardustFactor;
+                    acc[index].transferCount += 1;
+                } else {
+                    acc.push({name: altName, transferValue: curVal.amount / stardustFactor, transferCount: 1, transferSig: false});
+                }
+
+                return acc;
+            }, []);
+
+            // filter out exchange and nextcolony account
+            aggregatedTransfers = aggregatedTransfers.filter(alt => !altsToExclude.includes(alt.name));
+            // filter out smaller deals
+            //aggregatedTransfers = aggregatedTransfers.filter(alt => alt.value > 100000);
+            for (let aggregatedTransfer of aggregatedTransfers) {
+                if (aggregatedTransfer.transferValue >= 100000 || (aggregatedTransfer.transferCount >= 20)) {
+                    aggregatedTransfer.transferSig = true;
+                }
+            }
+            console.dir(aggregatedTransfers)
+
+
+            let transportMissions = await getMissionsByType(player.user, "transport", 10000);
+            let deployMissions = await getMissionsByType(player.user, "deploy", 10000);
+            let moveMissions = transportMissions.concat(deployMissions);
+            let moveMissionsToOther = [];
+            for (const moveMission of moveMissions) {
+                //console.log(moveMission)
+                let index = allPlanets.findIndex(planet => planet.x == moveMission.cords_hor_dest && planet.y == moveMission.cords_ver_dest);
+                if (index == -1) {
+                    console.log("cannot find planet")
+                } else {
+                    const destinationUser = allPlanets[index].user;
+                    if (destinationUser != player.user) {
+                        let otherIndex = moveMissionsToOther.findIndex(mission => mission.name == destinationUser);
+                        if (otherIndex == -1) {
+                            let moveMissionToOther = {name: destinationUser, moveCount: 1, moveSig: false};
+                            moveMissionsToOther.push(moveMissionToOther);
+                        } else {
+                            moveMissionsToOther[otherIndex].moveCount += 1;
+                        }
+
+                    }
+
+                }
+            }
+
+            // filter out exchange and nextcolony account
+            moveMissionsToOther = moveMissionsToOther.filter(alt => !altsToExclude.includes(alt.name));
+            // filter out smaller deals
+            for (let moveMission of moveMissionsToOther) {
+                if (moveMission.moveCount >= 10) {
+                    moveMission.moveSig = true;
+                }
+            }
+
+            console.dir(moveMissionsToOther)
+
+            // Bring together alt info
+            let consolidatedAlts = [];
+            for (let aggregatedTransfer of aggregatedTransfers) {
+                let moveIndex = moveMissionsToOther.findIndex(alt => alt.name == aggregatedTransfer.name);
+                if (moveIndex == -1) {
+                    consolidatedAlts.push({name: aggregatedTransfer.name, transferValue: aggregatedTransfer.transferValue, transferCount: aggregatedTransfer.transferCount, transferSig: aggregatedTransfer.transferSig, moveCount: 0, moveSig: false});
+                } else {
+                    consolidatedAlts.push({name: aggregatedTransfer.name, transferValue: aggregatedTransfer.transferValue, transferCount: aggregatedTransfer.transferCount, transferSig: aggregatedTransfer.transferSig, moveCount: moveMissionsToOther[moveIndex].moveCount, moveSig: moveMissionsToOther[moveIndex].moveSig});
+                }
+            }
+            for (let moveMission of moveMissionsToOther) {
+                let transferIndex = aggregatedTransfers.findIndex(alt => alt.name == moveMission.name);
+                if (transferIndex == -1) {
+                    consolidatedAlts.push({name: moveMission.name, transferValue: 0, transferCount: 0, transferSig: false, moveCount: moveMission.moveCount, moveSig: moveMission.moveSig});
+                }
+            }
+
+            consolidatedAlts = consolidatedAlts.filter(alt => alt.transferSig == true || alt.moveSig == true);
+            console.dir(consolidatedAlts)
+
+            // CALCULATE VALUE OF ALL PLANETS
+            let planetsValue = valueOfPlayerPlanets(player.user, allPlanets);
 
             // Create row for table and label it with user id
             let newRow = document.createElement("div")
@@ -387,44 +479,182 @@ window.addEventListener('load', async (event) => {
             newRow.setAttribute('class', "seasontable");
             reportTable.appendChild(newRow);
 
-            newRow.appendChild(createTableDiv("rank", index+1, columnWidths[0], true))
-            newRow.appendChild(createTableDiv("user", player.user, columnWidths[1], true))
-            newRow.appendChild(createTableDiv("build", player.build_reward/100000000, columnWidths[2], true))
-            newRow.appendChild(createTableDiv("destroy", player.destroy_reward/100000000, columnWidths[3], true))
-            newRow.appendChild(createTableDiv("total", player.total_reward/100000000, columnWidths[4], true))
-            newRow.appendChild(createTableDiv("value", (planetsValue/1000000).toFixed(2) + "m", columnWidths[5], true))
-            newRow.appendChild(createTableDiv("stardust", (stardust/(100000000 * 1000000)).toFixed(2) + "m", columnWidths[6], true))
-
-            /*
-            for (let i = yamatoArray.length-1; i >= 0; i-=1) {
-                let reduction = yamatoArray[i];
-                for (let j = 0; j < i; j+=1) {
-                    yamatoArray[j] -= reduction;
-                }
-            }
-            */
+            newRow.appendChild(createTableDiv("rank", index+1, columnWidths[0], true, "blue"))
+            newRow.appendChild(createTableDiv("user", player.user, columnWidths[1], true, "blue"))
+            newRow.appendChild(createTableDiv("value", (planetsValue/1000000).toFixed(2) + "m", columnWidths[2], true, "blue"))
+            newRow.appendChild(createTableDiv("stardust", (stardust/(stardustFactor * 1000000)).toFixed(2) + "m", columnWidths[3], true, "blue"))
+            newRow.appendChild(createTableDiv("build", (player.build_reward/stardustFactor/1000000).toFixed(2) + "m", columnWidths[4], true, "blue"))
+            newRow.appendChild(createTableDiv("destroy", (player.destroy_reward/stardustFactor/1000000).toFixed(2) + "m", columnWidths[5], true, "blue"))
+            newRow.appendChild(createTableDiv("total", (player.total_reward/stardustFactor/1000000).toFixed(2) + "m", columnWidths[6], true, "blue"))
 
             for (let i = 0; i < yamatoArray.length; i+=1) {
-                newRow.appendChild(createTableDiv(i+1, yamatoArray[i], "2%", true))
+                newRow.appendChild(createTableDiv(i+1, yamatoArray[i], "2%", true, "blue"))
             }
+
+
+            for (const alt of consolidatedAlts) {
+                let altUserWallet = await getWallet(alt.name, 1);
+                alt["stardust"] = altUserWallet.stardust/stardustFactor;
+                alt["planetsValue"] = valueOfPlayerPlanets(alt.name, allPlanets);
+                alt["total"] = alt["stardust"] + alt["planetsValue"];
+                //console.log(alt.name, alt.stardust, alt.planetsValue, alt.total, alt.total/1000000)
+            }
+
+            consolidatedAlts = consolidatedAlts.filter(alt => alt.total/1000000 > 0.05);
+            consolidatedAlts = consolidatedAlts.filter(alt => !seasonPlayers.map(player => player.user).includes(alt.name));
+            consolidatedAlts.sort((a, b) => b.total - a.total);
+
+            let totalConsolidatedAlts = {name: "total alts", transferValue: 0, transferCount: 0, transferSig: false, moveCount: 0, moveSig: false, stardust: 0, planetsValue: 0}
+            for (const alt of consolidatedAlts) {
+                totalConsolidatedAlts.transferValue += alt.transferValue;
+                totalConsolidatedAlts.transferCount += alt.transferCount;
+                totalConsolidatedAlts.moveCount += alt.moveCount;
+                totalConsolidatedAlts.stardust += alt.stardust;
+                totalConsolidatedAlts.planetsValue += alt.planetsValue;
+            }
+            consolidatedAlts.push(totalConsolidatedAlts);
+
+            for (const alt of consolidatedAlts) {
+                if (alt.name != "total alts") {
+                    let newRow = document.createElement("div");
+                    newRow.setAttribute('id', alt.name);
+                    newRow.setAttribute('class', "seasonTableAlt");
+                    reportTable.appendChild(newRow);
+
+                    newRow.appendChild(createTableDiv("altInd", "alt", columnWidths[0], true, "red"))
+                    console.log(seasonPlayers.map(player => player.user))
+                    if (seasonPlayers.map(player => player.user).includes(alt.name)) {
+                        newRow.appendChild(createTableDiv("user", alt.name, columnWidths[1], false, "red"))
+                    } else {
+                        newRow.appendChild(createTableDiv("user", alt.name, columnWidths[1], true, "red"))
+                    }
+
+                    newRow.appendChild(createTableDiv("value", (alt.planetsValue/1000000).toFixed(2) + "m", columnWidths[2], true, "red"))
+                    newRow.appendChild(createTableDiv("stardust", (alt.stardust/1000000).toFixed(2) + "m", columnWidths[3], true, "red"))
+                    newRow.appendChild(createTableDiv("text", "no t/f:", "5%", true, "red"))
+                    newRow.appendChild(createTableDiv("t/f val", alt.transferCount, "5%", true, "red"))
+                    newRow.appendChild(createTableDiv("text", "value:", "5%", true, "red"))
+                    newRow.appendChild(createTableDiv("transfersValue", (alt.transferValue/1000000).toFixed(2) + "m", "5%", true, "red"))
+                    newRow.appendChild(createTableDiv("text", "move to:", "5%", true, "red"))
+                    newRow.appendChild(createTableDiv("moveCount", alt.moveCount, "5%", true, "red"))
+                } else if (consolidatedAlts.length > 1) {
+                    let newRow = document.createElement("div");
+                    newRow.setAttribute('id', alt.name);
+                    newRow.setAttribute('class', "seasonTableAlt");
+                    reportTable.appendChild(newRow);
+
+                    newRow.appendChild(createTableDiv("altInd", "alt", columnWidths[0], true, "red"))
+                    newRow.appendChild(createTableDiv("user", alt.name, columnWidths[1], true, "red"))
+                    newRow.appendChild(createTableDiv("value", (alt.planetsValue/1000000).toFixed(2) + "m", columnWidths[2], true, "red"))
+                    newRow.appendChild(createTableDiv("stardust", (alt.stardust/1000000).toFixed(2) + "m", columnWidths[3], true, "red"))
+
+                }
+
+            }
+
 
         }
     }
 
+    // Event listener for click on planetsTable
+    reportTable.addEventListener("click", function(e) {
+
+        // "Enum" of values for Focus
+        let altStates = Object.freeze({
+            altInd: {values: ["alt", "no"]}
+        });
+
+        //let playerData = fetchPlayerDataFromStorage()
+
+        // Identify cell clicked on (ignore header for the moment)
+        const item = e.target.id
+        const parentDivID = e.target.parentNode.id;
+        let divValue = e.target.innerText
+        console.log(item, parentDivID, divValue)
+
+
+        // Rotate through possible values and update table and userData
+        if (altStates[item] !== undefined) {
+            const columnValues = altStates[item].values
+            console.log(columnValues)
+            const currentIndex = columnValues.findIndex(value => value == divValue);
+            const newIndex = (currentIndex + 1) % columnValues.length
+            const newValue = columnValues[newIndex];
+            console.log(currentIndex, newIndex, newValue)
+            e.target.innerText = newValue;
+
+            /*
+            let userDataPlanetsIndex = userDataEntry.planets.findIndex(entry => entry.id === parentDivID);
+            console.log(userDataPlanetsIndex)
+            if (userDataPlanetsIndex !== -1) {
+                let override = planetStates[item].override
+                let derived = planetStates[item].derived
+
+                if (userDataEntry.planets[userDataPlanetsIndex][derived] === newValue) {
+                    e.target.setAttribute('class', 'tableBoxDerived');
+                    userDataEntry.planets[userDataPlanetsIndex][override] = false
+                } else {
+                    e.target.setAttribute('class', 'tableBoxUser');
+                    userDataEntry.planets[userDataPlanetsIndex][override] = newValue
+                }
+                userDataEntry.planets[userDataPlanetsIndex][item] = newValue
+                e.target.innerText = newValue
+
+                setUserDataInStorage(user, userDataEntry)
+            }
+            */
+
+        }
+
+    });
+
+    function valueOfPlayerPlanets(player, allPlanets) {
+        planetValuation =
+            [
+                [0,0,0,0,0,0], //0 - does not exist
+                [0, 5000, 9000, 10000, 12000, 15000], //1 - common - atmo, coal, ore, copper, uranium
+                [0, 10000, 18000, 20000, 25000, 30000], //2 - uncommon
+                [0, 30000, 50000, 60000, 70000 ,90000], //3 - rare
+                [0, 0, 0, 0, 0, 9000000], //4 - legendady
+            ]
+
+        let planetsValue = 0;
+        let playerPlanets = allPlanets.filter(planet => planet.user == player)
+        //let userPlanets = await getPlanetsOfUser(player.user);
+        //console.dir(userPlanets)
+        //for (const [i, planet] of dataPlanets.planets.entries()) {
+        for (const planet of playerPlanets) {
+        //for (const planet of userPlanets.planets) {
+            //console.log(planet.bonus, planet.planet_type)
+            //console.log(planetValuation[planet.bonus][planet.planet_type])
+            planetsValue += planetValuation[planet.bonus][planet.type];
+        }
+
+        return planetsValue;
+    }
 
 
     // ----------------------------------
     // PLANETS
     // ----------------------------------
 
-    function createTableDiv(divId, text, width, derived) {
+    function createTableDiv(divId, text, width, derived, colour) {
         let div = document.createElement("div");
         div.setAttribute('id', divId);
-        if (derived === true) {
-            div.setAttribute('class', 'tableBoxDerived');
-        } else {
-            div.setAttribute('class', 'tableBoxUser');
+        if (colour == "blue") {
+            if (derived === true) {
+                div.setAttribute('class', 'tableBoxDerivedBlue');
+            } else {
+                div.setAttribute('class', 'tableBoxUserBlue');
+            }
+        } else if (colour == "red") {
+            if (derived === true) {
+                div.setAttribute('class', 'tableBoxDerivedRed');
+            } else {
+                div.setAttribute('class', 'tableBoxUserRed');
+            }
         }
+
         div.style.width = width;
         div.style.display = 'inline-block';
 
@@ -520,7 +750,7 @@ window.addEventListener('load', async (event) => {
     planetsTable.addEventListener("click", function(e) {
 
         // "Enum" of values for Focus
-        planetStates = Object.freeze({
+        let planetStates = Object.freeze({
             focus: {values: ["explore", "develop", "resource"], override: "focusOverride", derived: "focusDerived"} ,
             build: {values: ["new", "develop", "none"], override: "buildOverride", derived: "buildDerived"},
             shipbuild: {values: ["explorer", "all", "none"], override: "shipbuildOverride", derived: "shipbuildDerived"},
@@ -1996,6 +2226,7 @@ async function findExplorationTransactions(user, userData, explorerRange, output
 
                     let spaceCoords = [x, y];
                     spaceInfo["distance"] = distance(planetCoords, spaceCoords);
+                    spaceInfo["distanceWithBonus"] = spaceInfo["distance"];
 
                     let travelTime = convertDistanceToTimeInSeconds(1, spaceInfo.distance);
                     spaceInfo["arrival"] = (missionLaunchTime/1000) + travelTime;
@@ -2030,12 +2261,13 @@ async function findExplorationTransactions(user, userData, explorerRange, output
                         spaceInfo["exploration"] = true;
 
                         let snipes = [];
+                        let doNotSnipe = ["miniature-tiger", "tiger-zaps"]
 
                         let k=0;
                         for (const exploration of explorations) {
 
 
-                            if (exploration.user == user) {
+                            if (exploration.user == user || doNotSnipe.includes(exploration.user)) {
                                 spaceInfo["underSearch"] = true;
                             } else {
                                 let snipeInfo = {x: x, y: y};
@@ -2048,6 +2280,7 @@ async function findExplorationTransactions(user, userData, explorerRange, output
                                     spaceInfo["sniped"] = "lost";
                                 } else if (snipeInfo.rivalArrival >= snipeInfo.userArrival && spaceInfo["sniped"] != "lost") {
                                     spaceInfo["sniped"] = "opportunity";
+                                    spaceInfo["distanceWithBonus"] = spaceInfo["distanceWithBonus"] / 2
                                 }
                                 snipes.push(snipeInfo)
                             }
@@ -2084,8 +2317,13 @@ async function findExplorationTransactions(user, userData, explorerRange, output
             //console.log(proposedExplorations[i])
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.planet == false);
             //console.log(proposedExplorations[i])
-            proposedExplorations[i].sort((a, b) => a.distance - b.distance);
+
+
+            proposedExplorations[i].sort((a, b) => a.distanceWithBonus - b.distanceWithBonus);
             //console.log(proposedExplorations[i])
+
+
+            /*
             snipeOpportunities = proposedExplorations[i].filter(space => space.sniped == "opportunity");
             snipeOpportunities = snipeOpportunities.slice(0, availableExplorerMissions);
 
@@ -2094,6 +2332,9 @@ async function findExplorationTransactions(user, userData, explorerRange, output
             //proposedExplorations[i] = proposedExplorations[i].slice(0, availableExplorerMissions);
             //console.log(proposedExplorations[i])
             proposedExplorations[i] = snipeOpportunities.concat(nonSnipeExplorations);
+            */
+            proposedExplorations[i] = proposedExplorations[i].slice(0, availableExplorerMissions);
+
             //console.log(proposedExplorations[i])
             /*
             let reportingExplorations = space[i].filter(space => space.explored == false);
@@ -2112,9 +2353,11 @@ async function findExplorationTransactions(user, userData, explorerRange, output
                 exploration.shipName = "explorership";
                 exploration.sniped = proposal.sniped;
                 if (proposal.sniped == "opportunity") {
-                    let opportunityCount = explorationTransactions.filter(transaction => transaction.sniped == "opportunity").length;
-                    explorationTransactions.splice(opportunityCount, 0, exploration);
-                    outputNode.innerHTML += exploration.type + " " + exploration.x + " " + exploration.y + " " + exploration.shipName + " " + proposal.distance + " --- SNIPE HAS PRIORITY OVER PLANET ORDER --- <br>";
+                    //let opportunityCount = explorationTransactions.filter(transaction => transaction.sniped == "opportunity").length;
+                    explorationTransactions.push(exploration);
+                    //explorationTransactions.splice(opportunityCount, 0, exploration);
+                    //outputNode.innerHTML += exploration.type + " " + exploration.x + " " + exploration.y + " " + exploration.shipName + " " + proposal.distance + " --- SNIPE HAS PRIORITY OVER PLANET ORDER --- <br>";
+                    outputNode.innerHTML += exploration.type + " " + exploration.x + " " + exploration.y + " " + exploration.shipName + " " + proposal.distance + " --- SNIPE reduced distance to: " + proposal.distanceWithBonus + "<br>";
                 } else {
                     explorationTransactions.push(exploration);
                     outputNode.innerHTML += exploration.type + " " + exploration.x + " " + exploration.y + " " + exploration.shipName + " " + proposal.distance + "<br>";

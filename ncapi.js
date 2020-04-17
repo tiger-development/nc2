@@ -109,8 +109,14 @@ async function getMarketForShipAndUser(user, shipType, active, sold) {
     return data
 }
 
-async function getWallet(user) {
-    let response = await fetch("https://api.nextcolony.io/wallet?user=" + user);
+async function getWallet(userName, limit) {
+    let response = await fetch("https://api.nextcolony.io/wallet?user=" + userName + "&limit=" + limit);
+    let data = await response.json();
+    return data
+}
+
+async function getAllPlanets() {
+    let response = await fetch("https://api.nextcolony.io/galaxyplanets");
     let data = await response.json();
     return data
 }
