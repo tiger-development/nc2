@@ -277,13 +277,16 @@ window.addEventListener('load', async (event) => {
     async function setLoginUserData(user) {
         let updateType = "full"
 
-        const previousUserDataTime = getItemFromLocalStorage('userDataTime')
+        const previousUserDataTimeFull = getItemFromLocalStorage('userDataTimeFull')
+        const previousUserDataTimeMinor = getItemFromLocalStorage('userDataTimeMinor')
+
         const userDataTime = Date.now();
-        setItemInLocalStorage('userDataTime', userDataTime)
 
-
-        if ((userDataTime - previousUserDataTime) < (1000 * 60 * 60 * 24)) {
+        if ((userDataTime - previousUserDataTimeFull) < (1000 * 60 * 60 * 24)) {
             updateType = "minor"
+            setItemInLocalStorage('userDataTime', userDataTime)
+        } else {
+            setItemInLocalStorage('userDataTime', userDataTime)
         }
 
         userData = await updateAndStoreUserData(user, updateType);
@@ -677,7 +680,7 @@ window.addEventListener('load', async (event) => {
         planetsTable.appendChild(headerRow);
 
         for (let i = 0; i < columnHeaders.length; i+=1) {
-            headerRow.appendChild(createTableDiv(columnHeaders[i], columnHeaders[i], columnWidths[i], false));
+            headerRow.appendChild(createTableDiv(columnHeaders[i], columnHeaders[i], columnWidths[i], false, "blue"));
         }
 
 
@@ -690,37 +693,35 @@ window.addEventListener('load', async (event) => {
             newRow.setAttribute('class', "table");
             planetsTable.appendChild(newRow);
 
-
-
-            newRow.appendChild(createTableDiv("name", planet.name, columnWidths[0], true))
-            newRow.appendChild(createTableDiv("id", planet.id, columnWidths[1], true))
-            newRow.appendChild(createTableDiv("coords", "[" + planet.planetCoords + "]", columnWidths[2], true))
+            newRow.appendChild(createTableDiv("name", planet.name, columnWidths[0], true, "blue"))
+            newRow.appendChild(createTableDiv("id", planet.id, columnWidths[1], true, "blue"))
+            newRow.appendChild(createTableDiv("coords", "[" + planet.planetCoords + "]", columnWidths[2], true, "blue"))
 
             if (planet.focus === planet.focusDerived) {
-                newRow.appendChild(createTableDiv("focus", planet.focus, columnWidths[3], true))
+                newRow.appendChild(createTableDiv("focus", planet.focus, columnWidths[3], true, "blue"))
             } else {
-                newRow.appendChild(createTableDiv("focus", planet.focus, columnWidths[3], false))
+                newRow.appendChild(createTableDiv("focus", planet.focus, columnWidths[3], false, "blue"))
             }
 
             if (planet.build === planet.buildDerived) {
-                newRow.appendChild(createTableDiv("build", planet.build, columnWidths[4], true))
+                newRow.appendChild(createTableDiv("build", planet.build, columnWidths[4], true, "blue"))
             } else {
-                newRow.appendChild(createTableDiv("build", planet.build, columnWidths[4], false))
+                newRow.appendChild(createTableDiv("build", planet.build, columnWidths[4], false, "blue"))
             }
 
             if (planet.shipbuild === planet.shipbuildDerived) {
-                newRow.appendChild(createTableDiv("shipbuild", planet.shipbuild, columnWidths[5], true))
+                newRow.appendChild(createTableDiv("shipbuild", planet.shipbuild, columnWidths[5], true, "blue"))
             } else {
-                newRow.appendChild(createTableDiv("shipbuild", planet.shipbuild, columnWidths[5], false))
+                newRow.appendChild(createTableDiv("shipbuild", planet.shipbuild, columnWidths[5], false, "blue"))
             }
 
             if (planet.explore === planet.exploreDerived) {
-                newRow.appendChild(createTableDiv("explore", planet.explore, columnWidths[6], true))
+                newRow.appendChild(createTableDiv("explore", planet.explore, columnWidths[6], true, "blue"))
             } else {
-                newRow.appendChild(createTableDiv("explore", planet.explore, columnWidths[6], false))
+                newRow.appendChild(createTableDiv("explore", planet.explore, columnWidths[6], false, "blue"))
             }
 
-            newRow.appendChild(createTableDiv("distance", planet.shortestDistance, columnWidths[7], true))
+            newRow.appendChild(createTableDiv("distance", planet.shortestDistance, columnWidths[7], true, "blue"))
 
             /*
             // Add div for planet name
@@ -1270,7 +1271,7 @@ async function newBuildTransactionsForPlanet(planetId, resources, buildings) {
     console.dir(resources)
     console.dir(buildings)
 
-    let maximumLevel = 14;
+    let maximumLevel = 16;
 
     let buildingsPriority = []
 
@@ -2198,6 +2199,14 @@ async function findExplorationTransactions(user, userData, explorerRange, output
         let availableMissions = planet.planetMissionInfo.planet_unused;
         let availableExplorerMissions = Math.min(availableMissions, explorersAvailable);
 
+        let planetMissionsData = await getMissions(user, planet.id, 1)
+        //console.dir(planetMissionsData)
+        //console.dir(planet.planetMissionInfo)
+        let missionCapacity = planet.planetMissionInfo.planet_max
+        let currentMissions = planet.planetMissionInfo.planet_active
+
+        let explorerMissions = planetMissionsData.filter(mission => mission.type == "explorespace").length;
+
         if (i==0) {
             //userAvailableMissions = planetMissionInfo[i].user_unused;
             outputNode.innerHTML += "<br>";
@@ -2206,7 +2215,8 @@ async function findExplorationTransactions(user, userData, explorerRange, output
 
         outputNode.innerHTML += "<br>";
         outputNode.innerHTML += planet.id + " " + planet.name + ":<br>";
-        outputNode.innerHTML += "available missions: " + availableMissions + " available explorers: " + explorersAvailable + " shortest distance: " + planet.shortestDistance + "<br>";
+        outputNode.innerHTML += "planet mission capacity: " + missionCapacity + " current missions: " + currentMissions + " available missions: " + availableMissions + "<br>";
+        outputNode.innerHTML += "current explorer missions: " + explorerMissions + " available explorers: " + explorersAvailable + " shortest distance: " + planet.shortestDistance + "<br>";
 
         //console.log(planet.id, planet.name)
         //console.log(planet.shortestDistance, explorerRange, planet.shortestDistance < explorerRange)

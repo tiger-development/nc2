@@ -259,7 +259,7 @@ async function updateAndStoreUserData(user, updateType) {
             //console.dir(galaxyData)
             //let planetCoords = [planet.posx, planet.posy]
 
-            // Find available exploration - ignore is exploration already set to false
+            // Find available exploration - ignore if exploration already set to false
             if ( (updateType === "reset") || (updateType === "full" && planet.exploreDerived === true) || (updateType === "minor" && planet.status === "new")) {
                 console.log(i, "galaxyData")
                 let galaxyData = await getGalaxy(planet.planetCoords[0], planet.planetCoords[1], 48, 48);
@@ -268,7 +268,6 @@ async function updateAndStoreUserData(user, updateType) {
                     userDataEntry.planets[i]["exploreDerived"] = false;
                 } else {
                     userDataEntry.planets[i]["shortestDistance"] = parseFloat(spacesAvailable[0].distance.toFixed(2));
-
                 }
             }
 
