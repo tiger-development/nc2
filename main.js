@@ -284,9 +284,9 @@ window.addEventListener('load', async (event) => {
 
         if ((userDataTime - previousUserDataTimeFull) < (1000 * 60 * 60 * 24)) {
             updateType = "minor"
-            setItemInLocalStorage('userDataTime', userDataTime)
+            setItemInLocalStorage('userDataTimeMinor', userDataTime)
         } else {
-            setItemInLocalStorage('userDataTime', userDataTime)
+            setItemInLocalStorage('userDataTimeFull', userDataTime)
         }
 
         userData = await updateAndStoreUserData(user, updateType);
