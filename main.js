@@ -1271,7 +1271,7 @@ async function newBuildTransactionsForPlanet(planetId, resources, buildings) {
     console.dir(resources)
     console.dir(buildings)
 
-    let maximumLevel = 16;
+    let maximumLevel = 14;
 
     let buildingsPriority = []
 
