@@ -907,7 +907,7 @@ let workFlowMonitor = true
 // --------------------------
 
 async function runBurnPlanet(user, userData, planetBurnId, outputNode) {
-    outputNode.innerHTML = "Burning planet: ", planetBurnId;
+    outputNode.innerHTML = "Burning planet: " + planetBurnId + "<br>";
     burnPlanet(user, planetBurnId)
 }
 
