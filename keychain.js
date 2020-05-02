@@ -1,6 +1,21 @@
 
 // Functions to build and run keychain transactions on blockchain
 
+function burnPlanet(user, planetId) {
+    var scJson = {};
+    var scCommand = {};
+    // Create Command
+    scJson["username"] = user;
+    scJson["type"] = "burn";
+    scCommand["tr_var1"] = planetId;
+
+    scJson["command"] = scCommand;
+    var finalJson = JSON.stringify(scJson);
+
+    keychainCustomJson(user, 'nextcolony', 'Posting', finalJson, 'displayName')
+}
+
+
 function buildShip(user, planetId, shipName) {
     var scJson = {};
     var scCommand = {};

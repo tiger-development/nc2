@@ -809,6 +809,7 @@ window.addEventListener('load', async (event) => {
     // Get mission buttons
     const runLoginMissionButton = document.getElementById('runLoginMission');
     const runInfoMissionButton = document.getElementById('runInfoMission');
+    const burnPlanetButton = document.getElementById('burnPlanet');
 
     var loginMissionSelect = document.getElementById("loginMissionSelect")
     var infoMissionSelect = document.getElementById("infoMissionSelect")
@@ -818,6 +819,7 @@ window.addEventListener('load', async (event) => {
     const yCoordinateField = document.getElementById("yCoordinate")
     const maxProcessField = document.getElementById("numberOfTransactions")
     const explorerRangeField = document.getElementById("explorerRange")
+    const planetBurnIdField = document.getElementById("planetBurnId")
 
     const outputNode = document.getElementById('output');
 
@@ -833,6 +835,20 @@ window.addEventListener('load', async (event) => {
     //    await createUserData(userName.user);
     //    console.dir(userDataStore[index])
     //}
+
+    burnPlanetButton.addEventListener('click', (e) => {
+        // Stop the default action from doing anything
+        e.preventDefault();
+
+        const planetBurnId = planetBurnIdField.value;
+
+        if (user && logInStatus == "keychain") {
+            runBurnPlanet(user, userData, planetBurnId, outputNode);
+        } else {
+            console.log('User not logged in with keychain.');
+        }
+    });
+
 
     runLoginMissionButton.addEventListener('click', (e) => {
         // Stop the default action from doing anything
@@ -889,6 +905,12 @@ let workFlowMonitor = true
 
 
 // --------------------------
+
+async function runBurnPlanet(user, userData, planetBurnId, outputNode) {
+    outputNode.innerHTML = "Burning planet: ", planetBurnId;
+    burnPlanet(user, planetBurnId)
+}
+
 
 async function runLoginMission(user, userData, mission, maxProcess, explorerRange, xCoordinate, yCoordinate, outputNode) {
     outputNode.innerHTML = "";
