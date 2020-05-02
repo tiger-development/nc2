@@ -150,6 +150,13 @@ async function updateAndStoreUserData(user, updateType) {
             userDataEntry.planets[i].status = 'disposed'
         }
     }
+
+    // Delete planet from user array
+    for (const i = userDataEntry.planets-1; i>=0; i-=1) {
+        if (userDataEntry.planets[i].status == 'disposed') {
+            userDataEntry.planets.splice(i, 1)
+        }
+    }
     console.log("mark as disposed - operation took: ", (Date.now() - operationStartTime)/1000)
 
     // Loop through planets from API and add any new planets to userDataEntry / update old planets
