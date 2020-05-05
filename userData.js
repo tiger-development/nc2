@@ -152,19 +152,15 @@ async function updateAndStoreUserData(user, updateType) {
     }
 
     // Delete planet from user array
-
-    console.log(userDataEntry.planets.length)
-
+    console.log(userDataEntry.planets.length, " pre deletion.")
     for (let i = userDataEntry.planets.length-1; i>=0; i-=1) {
-        //console.log(i)
         if (userDataEntry.planets[i].status == 'disposed') {
             console.log("deleting planet: ", userDataEntry.planets[i].name, userDataEntry.planets[i].id)
             userDataEntry.planets.splice(i, 1)
         }
 
     }
-    console.log(userDataEntry.planets.length)
-
+    console.log(userDataEntry.planets.length, " remain.")
     console.log("mark as disposed - operation took: ", (Date.now() - operationStartTime)/1000)
 
     // Loop through planets from API and add any new planets to userDataEntry / update old planets

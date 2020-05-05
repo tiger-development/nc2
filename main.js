@@ -2299,7 +2299,8 @@ async function findExplorationTransactions(user, userData, explorerRange, output
                         for (const exploration of explorations) {
 
 
-                            if (exploration.user == user || doNotSnipe.includes(exploration.user)) {
+                            if (true) { // workaround to prevent sniping
+                            //if (exploration.user == user || doNotSnipe.includes(exploration.user)) {
                                 spaceInfo["underSearch"] = true;
                             } else {
                                 let snipeInfo = {x: x, y: y};
@@ -2350,6 +2351,8 @@ async function findExplorationTransactions(user, userData, explorerRange, output
             proposedExplorations[i] = proposedExplorations[i].filter(space => space.planet == false);
             //console.log(proposedExplorations[i])
 
+            // Addition to limit distance correctly
+            proposedExplorations[i] = proposedExplorations[i].filter(space => space.distance <= explorerRange);
 
             proposedExplorations[i].sort((a, b) => a.distanceWithBonus - b.distanceWithBonus);
             //console.log(proposedExplorations[i])
