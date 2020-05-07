@@ -1843,7 +1843,7 @@ async function resourceForYamatos(user, userData, outputNode, transactionType, s
                 }
             }
 
-            if (distanceToNearestYamatoPlanet > 0 && distanceToNearestYamatoPlanet < (explorerRange)) {
+            if (distanceToNearestYamatoPlanet > 0 && distanceToNearestYamatoPlanet < explorerRange) {
                 let planetData = await getPlanetResources(planet.id);
                 let planetResources = await calculateCurrentResources(planetData);
                 resourceTypes = ["coal", "ore", "copper", "uranium"]
@@ -1933,7 +1933,7 @@ async function resourceForYamatos(user, userData, outputNode, transactionType, s
             } else if (distanceToNearestYamatoPlanet == 0) {
                 outputNode.innerHTML += "<br>";
                 outputNode.innerHTML += planet.name + " (" + planet.id + "): Yamato planet" + "<br>";
-            } else if (distanceToNearestYamatoPlanet > explorerRange {
+            } else if (distanceToNearestYamatoPlanet > explorerRange) {
                 outputNode.innerHTML += "<br>";
                 outputNode.innerHTML += planet.name + " (" + planet.id + "): Distance too far" + "<br>";
             }
