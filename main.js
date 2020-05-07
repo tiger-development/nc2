@@ -921,12 +921,11 @@ async function runLoginMission(user, userData, mission, maxProcess, explorerRang
         check(user)
     } else if (mission == "resource yamatos") {
         console.log("runLoginMission - resource yamatos")
-        let transactions = await sendToYamatos(user, userData, outputNode, "transport");
+        let transactions = await sendToYamatos(user, userData, outputNode, "transport", explorerRange);
         transactionDelay = 500;
         processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
-
     } else if (mission == "deploy to yamatos") {
-        let transactions = await sendToYamatos(user, userData, outputNode, "deploy");
+        let transactions = await sendToYamatos(user, userData, outputNode, "deploy", explorerRange);
         transactionDelay = 500;
         processKeychainTransactions(user, transactions, maxProcess, transactionDelay);
     } else if (mission == "build explorers") {
@@ -977,9 +976,9 @@ async function runInfoMission(user, userData, mission, explorerRange, xCoordinat
     if (mission == "targets") {
         targets(user, outputNode)
     } else if (mission == "resource yamatos") {
-        let transportTransactions = await sendToYamatos(user, userData, outputNode, "transport")
+        let transportTransactions = await sendToYamatos(user, userData, outputNode, "transport", explorerRange)
     } else if (mission == "deploy to yamatos") {
-        let transportTransactions = await sendToYamatos(user, userData, outputNode, "deploy")
+        let transportTransactions = await sendToYamatos(user, userData, outputNode, "deploy", explorerRange)
     } else if (mission == "snipes") {
         snipes(user,outputNode)
     } else if (mission == "buildings") {
@@ -1734,7 +1733,7 @@ async function findShipsToBuild(user, userData, outputNode) {
 }
 
 
-async function sendToYamatos(user, userData, outputNode, transactionType) {
+async function sendToYamatos(user, userData, outputNode, transactionType, explorerRange) {
     let shipPriority = {}
 
     if (transactionType == "transport") {
@@ -1775,13 +1774,13 @@ async function sendToYamatos(user, userData, outputNode, transactionType) {
         }
     }
 
-    let transactions = await resourceForYamatos(user, userData, outputNode, transactionType, shipPriority);
+    let transactions = await resourceForYamatos(user, userData, outputNode, transactionType, shipPriority, explorerRange);
     return transactions;
 }
 
 
 
-async function resourceForYamatos(user, userData, outputNode, transactionType, shipPriority) {
+async function resourceForYamatos(user, userData, outputNode, transactionType, shipPriority, explorerRange) {
     // In user data mark yamato planets
     // If resource planet
     // Find nearest yamatos planet (yamato mission or yamato in fleet)
@@ -1830,7 +1829,7 @@ async function resourceForYamatos(user, userData, outputNode, transactionType, s
     for (const planet of userData.planets) {
         //let planetCoords = planet.planetCoords;
 
-        if (planet.focus == "resource" || planet.focus == "develop") {
+        //if (planet.focus == "resource" || planet.focus == "develop") {
             let distanceToNearestYamatoPlanet = 1000000;
             let nearestYamatoPlanet = planet;
 
@@ -1844,7 +1843,7 @@ async function resourceForYamatos(user, userData, outputNode, transactionType, s
                 }
             }
 
-            if (distanceToNearestYamatoPlanet > 0 && distanceToNearestYamatoPlanet < (24 * 4)) {
+            if (distanceToNearestYamatoPlanet > 0 && distanceToNearestYamatoPlanet < (explorerRange)) {
                 let planetData = await getPlanetResources(planet.id);
                 let planetResources = await calculateCurrentResources(planetData);
                 resourceTypes = ["coal", "ore", "copper", "uranium"]
@@ -1931,15 +1930,15 @@ async function resourceForYamatos(user, userData, outputNode, transactionType, s
 
                 }
             // distance
-          } else if (distanceToNearestYamatoPlanet == 0) {
-              outputNode.innerHTML += "<br>";
-              outputNode.innerHTML += planet.name + " (" + planet.id + "): Yamato planet" + "<br>";
-          } else if (distanceToNearestYamatoPlanet > (24 * 4)) {
-              outputNode.innerHTML += "<br>";
-              outputNode.innerHTML += planet.name + " (" + planet.id + "): Distance too far" + "<br>";
-          }
+            } else if (distanceToNearestYamatoPlanet == 0) {
+                outputNode.innerHTML += "<br>";
+                outputNode.innerHTML += planet.name + " (" + planet.id + "): Yamato planet" + "<br>";
+            } else if (distanceToNearestYamatoPlanet > explorerRange {
+                outputNode.innerHTML += "<br>";
+                outputNode.innerHTML += planet.name + " (" + planet.id + "): Distance too far" + "<br>";
+            }
 
-        }
+        //}
 
     }
 
