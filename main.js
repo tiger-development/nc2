@@ -1757,20 +1757,21 @@ async function sendToYamatos(user, userData, outputNode, transactionType, explor
     // deploy
     } else {
         shipPriority = {
-            dreadnought: 99,
-            dreadnought2: 99,
-            carrier: 98,
-            carrier2: 98,
-            battlecruiser: 89,
-            battlecruiser2: 89,
-            cruiser: 88,
-            cruiser2: 88,
-            destroyer: 79,
-            destroyer2: 79,
-            frigate: 78,
-            frigate2: 78,
-            corvette: 69,
-            corvette2: 69
+            //dreadnought: 99,
+            //dreadnought2: 99,
+            //carrier: 98,
+            //carrier2: 98,
+            transportship2: 99,
+            destroyer: 89,
+            destroyer2: 89,
+            frigate: 88,
+            frigate2: 88,
+            corvette: 79,
+            corvette2: 79,
+            cruiser: 69,
+            cruiser2: 69,
+            battlecruiser: 68,
+            battlecruiser2: 68,
         }
     }
 
